@@ -1,17 +1,18 @@
 # Changelog
 
-## [0.0.0]
+## [1.0.0] – 2025-03-26
 ### Added
-- Script monolitico `transcriber.py` con
-  - Selezione interattiva del file audiovideo
-  - Scelta del modello Whisper (`tiny`, `base`, `small`, `medium`)
-  - Selezione del device (`cuda` o `cpu`)
-  - Opzione per trascrivere tutto o solo una parte tramite timestamp
-  - Funzione `taglia_audio` basata su `ffmpeg`
-  - Output trascrizione salvato in `.txt`
+- Estesa funzione `trascrivi` con due modalità: **Standard** (testo leggibile) e **Accurata** (per NLP/sottotitoli)
+- Log dettagliato in `whisper_benchmark.log` con host, modello, device, durata, tempo e parole
+- Calcolo della durata audio con `wave` (per .wav) e `ffprobe` (per altri)
+- Scelta interattiva se mantenere o eliminare la clip audio tagliata
+- Nuova funzione `timestamp_in_secondi` per confronti tra timestamp
+- Identificazione host via `platform` o `wmic` (Windows)
 
-### Known Limitations
-- Nessun test automatico
-- Codice non modulare
-- Nessun controllo degli errori avanzato
-- Funzionamento esclusivamente interattivo da terminale
+### Changed
+- Maggiori controlli sui timestamp e sulla durata dell'audio
+- Migliorata robustezza nell’uso di `CUDA` (fallback automatico se non disponibile)
+- Messaggi utente più esplicativi e chiari
+
+### Fixed
+- Gestione fallback se `ffprobe` o `wave` non riescono a determinare la durata
