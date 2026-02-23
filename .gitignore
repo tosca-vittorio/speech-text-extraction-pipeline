@@ -70,6 +70,7 @@ docs/**
 # Eccezioni
 !docs/
 !docs/CHANGELOG.md
+!docs/ARCHITECTURE.md
 
 !docs/requirements/
 !docs/requirements/requirements.txt

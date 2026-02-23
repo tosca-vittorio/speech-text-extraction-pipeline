@@ -1,349 +1,169 @@
-# 📝 Whisper AI Transcriber
+# 🎙️ Speech Text Extraction Pipeline
 
----
+Pipeline CLI Python per trascrivere audio/video con Whisper, con flusso guidato, gestione clip parziali, naming consistente degli output e logging benchmark.
 
-## 📦 Requisiti
+## 1) Stato attuale del progetto (AS-IS)
 
-Sistema di trascrizione automatica audio/video basato su OpenAI Whisper.  
-➡️ Versione attuale: **v2.0.0 “Hyper-Whisper”**
+Il progetto è un **tool CLI locale** (non web app) con architettura modulare in `src/package`.
 
-- Windows 10+ (con `ffmpeg`)
+Funzionalità operative attuali:
+- trascrizione **completa** o **parziale** (con taglio clip),
+- scelta modello Whisper (`tiny`, `base`, `small`, `medium`),
+- scelta device (`cpu`, `cuda`, con fallback automatico a CPU se CUDA non disponibile),
+- scelta lingua (`it`, `en`, `fr`, `es`) usata sia in trascrizione sia nel naming/log,
+- protezione sovrascrittura output via `--overwrite yes|no` o prompt interattivo,
+- log benchmark su file dedicato.
+
+## 2) Prerequisiti
+
 - Python 3.10+
-- Chocolatey (opzionale, per installare ffmpeg)
-- Ambiente virtuale Python (`venv`)
-- Pacchetti Python elencati in `requirements.txt`
+- `ffmpeg` disponibile nel `PATH`
+- dipendenze Python in `docs/requirements/`
 
----
-
-## ⚙️ Setup iniziale
-
-### 1. Installare Chocolatey
-
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; 
-[System.Net.ServicePointManager]::SecurityProtocol = 
-[System.Net.ServicePointManager]::SecurityProtocol -bor 3072; 
-iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-```
-
-### 2. Installare ffmpeg
-
-```powershell
-choco install ffmpeg
-```
-
----
-
-## 🐍 Ambiente Virtuale Python
-
-### 3. Crea l’ambiente virtuale
+### Verifica rapida prerequisiti
 
 ```bash
-py -3.10 -m venv venv
-```
-
-### 4. Attiva il venv
-
-```bash
-.\venv\Scripts\activate
-```
-
-### 5. Installa i pacchetti richiesti
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## 📂 Struttura del progetto
-
-```plaintext
-/01_WHISPER_AI/
-│
-├── audio/                        # 🎧 Audio originali da trascrivere
-│
-├── doc/
-│   ├── 00_Virtual Environment/  # Setup ambiente virtuale (documentazione)
-│   ├── 01_WhisperAI/            # Specifiche progettuali
-│   ├── 02_Strategy/             # Strategie di trascrizione
-│   ├── 03_Transcriptions/       # 📄 Trascrizioni (.txt) + clip tagliate (.wav)
-│   └── 04_Requirements/         # Requisiti e specifiche tecniche
-│
-├── log/
-│   ├── bank_log.log             # Log esterni o legacy
-│   └── whisper_benchmark.log    # 🧠 Log prestazioni/benchmark in formato testo
-│
-├── src/
-│   ├── package/                 # 📦 Codice sorgente modulare
-│   │   ├── __init__.py
-│   │   ├── audio.py             # 🎵 Gestione file audio, taglio, durata, timestamp
-│   │   ├── cli_utils.py         # ⌨️ Funzioni di interazione CLI (prompt, scelta, orario)
-│   │   ├── config.py            # ⚙️ Percorsi, costanti e configurazioni globali
-│   │   ├── core.py              # 🧠 Chiamata a Whisper e generazione trascrizioni
-│   │   ├── errors.py            # 🚨 Eccezioni custom per dominio Transcriber
-│   │   ├── logger.py            # 📝 Logging su file whisper_benchmark.log
-│   │   ├── naming.py            # 🏷️ Generazione nomi output standardizzati
-│   │   └── transcriber.py       # 🚀 Entry-point CLI (main)
-│   │
-│   └── tests/                   # ✅ Test automatici con Pytest
-│       ├── resources/           # 🎯 File audio di test + output attesi (golden)
-│       ├── tmp/                 # 📦 Directory temporanea isolata nei test
-│       ├── test_audio.py
-│       ├── test_cli_utils.py
-│       ├── test_config.py
-│       ├── test_core.py
-│       ├── test_logger.py
-│       ├── test_naming.py
-│       └── test_transcriber.py
-│
-├── versions/                    # 🕰️ Versioni storiche del transcriber CLI
-│   ├── v0.0.0/                  # Prot. originario (non modulare)
-│   │   ├── CHANGELOG.md
-│   │   └── transcriber_v0.0.0.py
-│   ├── v1.0.0/                  # Versione stabile attuale
-│   │   ├── CHANGELOG.md
-│   │   └── transcriber_v1.0.0.py
-│   └── v1.1.0/                  # Modalità refactor + test + naming migliorato
-│       └── CHANGELOG.md
-│
-├── README.md                    # 📘  Documentazione del progetto
-├── CHANGELOG.md                 # 🗒️  Registro aggiornamenti
-├── toDo.md                      # 📌 Lista attività in corso o future
-├── pytest.ini, conftest.py      # ⚙️ Configurazione e setup Pytest
-└── venv/                        # 🐍 Ambiente virtuale Python
-```
-
-### 🔹Separazione delle responsabilità (Single Responsibility Principle)
-
-#### 📦 Modularizzazione in sottocomponenti
-| Modulo            | Responsabilità |
-|-------------------|----------------|
-| `cli.py`          | CLI e parsing argomenti (`argparse` / `click`) |
-| `core.py`         | Funzione centrale `transcribe(...)` |
-| `audio.py`        | Utility audio: taglio, durata, validazione |
-| `naming.py`       | Generazione nomi coerenti |
-| `logger.py`       | Logging centralizzato |
-| `config.py`       | Costanti di configurazione, percorsi, opzioni menu |
-| `errors.py`       | Eccezioni personalizzate |
-
----
-
-## 🚀 Come si esegue: da "src/"
-
-### Interattivo
-
-```bash
-python -m package.transcriber
-```
-
-Segui i prompt:
-
-1. Seleziona file `[🎧]` o `[🧪]`
-2. Scegli modello (`tiny`, `base`, `small`, `medium`)
-3. Modalità (`Standard` o `Accurata`)
-4. Scope (`Tutto` o `Solo una parte`)
-5. In caso di taglio → inserisci timestamp `hh:mm:ss`
-6. Conferma se salvare la clip
-7. In caso di file esistenti → prompt: sovrascrivere?
-
-### Non-interattivo (CLI)
-
-```bash
-python -m package.transcriber --file input.wav --model small --device cpu --overwrite yes
-```
-
----
-
-## 🧰 Funzionalità principali
-
-- ✂️ Supporto taglio parziale da timestamp `--start --end`
-- 🎯 Nome coerente output: `nome (mmss_mmss)(mod_mode).wav/txt`
-- ❗️ Protezione sovrascrittura (`--overwrite=no`, prompt interattivo)
-- 🧪 Test 100% coverage CLI, naming, audio, core, logger, transcriber
-- 📂 Gestione output e file di test in cartelle ben distinte
-- 🧠 Logging benchmark centrale `whisper_benchmark.log`
-
-* ✂️ Taglio preciso di porzioni audio con `ffmpeg`
-* 🧠 Modalità doppia:
-
-  * **Standard** → output leggibile
-  * **Accurata** → output fedele all’audio
-* 💾 Output coerente:
-
-  * `video (0005_0010)(sml_acc).txt`
-  * `video (0005_0010)(sml_acc).wav`
-* 🔐 Protezione overwrite:
-
-  * `--overwrite yes/no` o prompt interattivo
-* 📑 Logging dettagliato in `log/whisper_benchmark.log`
-* 🧪 Supporto audio test `[🧪]` da `tests/resources`
-* 📈 Copertura test > 95%, CI ready
-
-### 🔹 Best Practices
-
-✅ Type hint e docstring coerenti  
-✅ Logging con `logging`, formattazione leggibile, livelli configurabili  
-✅ Modularità con responsabilità ben definite  
-✅ CLI interattiva + supporto argomenti da riga di comando  
-✅ Error handling centralizzato  
-✅ Test `pytest` su ogni modulo (fixture, golden, mocking Whisper)  
-
----
-
-## 🧠 Suggerimenti per miglior qualità
-
-* Preferire `Accurata` su audio puliti
-* Modello consigliato: `small` o `medium`
-* Forzare lingua `"it"`
-* Input consigliato: 48kHz, 128kbps+, stereo
-
----
-
-## 📝 Esempio output log
-
-```
-[2025-05-29 14:55:10] Host: ACER | File: video_(0005_0010)(sml_acc).wav | Modello: small | Device richiesto: cpu | Device usato: cpu | Modalità: Accurata | Tipo: parziale | Durata audio: 0:00:05 | Tempo elaborazione: 0m 1.23s | Parole: 42
-```
-
----
-
-## 🧪 Stato Test
-
-* 🔬 47 test automatici → `pytest`
-* ✅ Tutti verdi (CI/CD compatibile)
-* 🎯 Test interattivi: flussi CLI (completi/parziali, sovrascrittura, errori)
-* 🧪 Test golden output
-
----
-
-## 🔁 Differenze vs Versione 1.0.0
-
-| Feature                | v1.0.0    | v2.0.0 “Hyper-Whisper” |
-| ---------------------- | --------- | ---------------------- |
-| Monolitico             | ✅         | ❌ package modulare     |
-| Naming coerente        | ❌ manuale | ✅ automatico           |
-| Protezione overwrite   | ❌ nessuna | ✅ gestita + CLI        |
-| Clip salvata “a parte” | ❌         | ✅ naming sincrono      |
-| Audio test `[🧪]`      | ❌         | ✅ nel menu             |
-| Logging dettagliato    | parziale  | ✅ full JSON-line       |
-| Copertura test         | assente   | ✅ 95%+                 |
-| Pronto per CI          | ❌         | ✅ sì                   |
-
----
-
-## 🔭 Roadmap futura (esempio)
-
-* `v2.1` → supporto SRT/VTT
-* `v2.2` → modalità traduzione (→ en)
-* `v3.0` → interfaccia grafica Streamlit + API Whisper
-
----
-
-## 📌 Autore
-
-Realizzato da **Ing. Toscano Vittorio** con ❤️
-Powered by [OpenAI Whisper](https://openai.com/research/whisper)
-
----
-
-## 🔹 Sviluppi Futuri
-
-- [ ] Documentazione Tecnica progetto (`doc/01_WhisperAI`)
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-
-> Il `README.md` è aggiornato alla versione 2.0.0
-> Riflette *tutte* le funzionalità e i flussi di lavoro correnti
-
-
-# WHISPER_AI Project Setup (ACER & ASUS)
-
-Benvenuto nella guida rapida per configurare correttamente l'ambiente di sviluppo su nuovi computer.
-
----
-
-## Requisiti di Sistema
-
-- **Windows 10 o superiore**
-- **Python 3.10** installato (non usare 3.13)
-- **Chocolatey** installato
-
-
-## Procedura Step-by-Step
-
-### 1. Installare Chocolatey
-
-Aprire **PowerShell come amministratore** e lanciare il comando ufficiale:
-
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-```
-
-Verificare l'installazione:
-
-```bash
-choco --version
-```
-
-### 2. Installare strumenti di sistema
-
-Usare Chocolatey per installare `ffmpeg`:
-
-```bash
-choco install ffmpeg
-```
-
-Verificare l'installazione:
-
-```bash
+python --version
 ffmpeg -version
 ```
 
+## 3) Installazione
 
-### 3. Creare l'ambiente virtuale (venv)
-
-Spostarsi nella cartella del progetto sincronizzata (es. `01_WHISPER_AI`) e creare il venv:
-
-```bash
-py -3.10 -m venv venv
-```
-
-Attivare il venv:
+### 3.1 Setup ambiente virtuale
 
 ```bash
-.\venv\Scripts\activate
+python -m venv .venv
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
+python -m pip install --upgrade pip
 ```
 
-### 4. Installare i pacchetti Python
+### 3.2 Installazione dipendenze
 
-Con il venv attivo, installare tutti i pacchetti richiesti:
+#### Opzione standard
 
 ```bash
-pip install -r requirements.txt
+pip install -r docs/requirements/requirements.txt
 ```
 
+#### Opzione CPU-only
 
-### 5. Verifica finale
+```bash
+pip install -r docs/requirements/requirements-cpu.txt
+```
 
-Controllare che tutto sia configurato correttamente:
+#### Opzione CUDA
 
-- `python --version` deve restituire 3.10.x
-- `pip list` deve mostrare `torch`, `openai-whisper`, ecc.
-- `ffmpeg -version` deve funzionare.
+```bash
+pip install -r docs/requirements/requirements-cuda.txt
+```
 
+> Nota: se installi profilo CPU/CUDA, assicurati che combaci con il tuo ambiente locale (driver/runtime GPU, wheel torch compatibili).
+
+## 4) Esecuzione
+
+### 4.1 Modalità interattiva (consigliata)
+
+Da root repository:
+
+```bash
+PYTHONPATH=src python -m package.transcriber
+```
+
+In alternativa da `src/`:
+
+```bash
+cd src
+python -m package.transcriber
+```
+
+### 4.2 Flag disponibili
+
+```bash
+python -m package.transcriber --overwrite yes
+python -m package.transcriber --overwrite no
+```
+
+Semantica:
+
+* `--overwrite yes`: sovrascrive automaticamente file di output in conflitto,
+* `--overwrite no`: non sovrascrive mai,
+* senza flag: chiede conferma via prompt.
+
+## 5) Flusso CLI reale
+
+All'avvio il tool chiede, in sequenza:
+
+1. azione (`Trascrivi` / `Esci`),
+2. file audio (da `audio/` o `src/tests/resources/`),
+3. modello Whisper,
+4. device (`cuda`/`cpu`),
+5. lingua audio,
+6. modalità (`Standard` / `Accurata`),
+7. scope (`Tutto` / `Solo una parte`).
+
+Se scope è parziale:
+
+* valida timestamp inizio/fine,
+* taglia la clip via ffmpeg,
+* opzionalmente conserva o elimina la clip tagliata.
+
+Infine:
+
+* salva il `.txt` in cartella trascrizioni,
+* scrive riga benchmark su log,
+* stampa riepilogo con tempo, durata audio, device e lingua.
+
+## 6) Struttura repository (essenziale)
+
+```text
+.
+├── README.md
+├── ARCHITECTURE.md
+├── docs/
+│   ├── CHANGELOG.md
+│   └── requirements/
+├── src/
+│   ├── package/
+│   │   ├── transcriber.py
+│   │   ├── core.py
+│   │   ├── audio.py
+│   │   ├── naming.py
+│   │   ├── logger.py
+│   │   ├── cli_utils.py
+│   │   ├── lang_utils.py
+│   │   ├── config.py
+│   │   └── errors.py
+│   └── tests/
+├── conftest.py
+└── pytest.ini
+```
+
+## 7) Path runtime importanti
+
+Configurati centralmente in `src/package/config.py`:
+
+* input utente: `audio/`
+* input test: `src/tests/resources/`
+* output trascrizioni: `doc/03_Transcriptions/`
+* log benchmark: `log/whisper_benchmark.log`
+
+## 8) Testing
+
+Dal root repository:
+
+```bash
+PYTHONPATH=src pytest -q
+```
+
+Se mancano `torch` o `whisper`, i test che importano quei moduli possono fallire già in fase di collection.
+
+## 9) Convenzioni output (alto livello)
+
+La generazione nomi output è gestita da `naming.py` e include metadati utili (modello, modalità, intervallo e lingua quando disponibile) per mantenere tracciabilità dei file trascritti.
+
+## 10) Documentazione correlata
+
+* Architettura tecnica: [`ARCHITECTURE.md`](./ARCHITECTURE.md)
+* Storico modifiche: [`docs/CHANGELOG.md`](./docs/CHANGELOG.md)
 
 ---
-
-## Note Finali
-
-- Non sincronizzare la cartella `venv` tramite Syncthing.
-- Ogni computer deve avere il suo venv locale.
-- Aggiornare `requirements.txt` se si installano nuovi pacchetti Python.
-
----
-
-# Buon lavoro con WHISPER_AI! 🚀
-
