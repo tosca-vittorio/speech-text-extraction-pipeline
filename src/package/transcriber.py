@@ -15,7 +15,6 @@ from package.config import (
     AUDIO_DIR,
     TEST_AUDIO_DIR,
     TRANSCRIPTION_DIR,
-    DEFAULT_LANG,
     MODEL_OPTIONS,
     DEVICE_OPTIONS,
     MODALITA_OPTIONS,
@@ -37,6 +36,8 @@ from package.errors import (
     AudioProcessingError,
     ConfigError,
 )
+from package.lang_utils import select_language  # import per scelta lingua
+from package.naming import genera_nome_file_output   # import unico per naming
 
 # ───────────────────────── Arg-parsing ──────────────────────────────
 def _parse_args() -> argparse.Namespace:
@@ -101,25 +102,39 @@ def main() -> None:
         print("⚠️  CUDA non disponibile: uso CPU.")
         device = "cpu"
 
-    # 3) modalità
+    # 3) scelta lingua
+    lang = select_language()
+
+    # 4) modalità
     modalita_acc = ask_choice("🧠 Modalità trascrizione:", MODALITA_OPTIONS).strip()\
         .startswith("Accurata")
 
-    # 4) ambito
+    # 5) ambito
     scope = ask_choice("📌 Trascrivi tutto o solo una parte?", SCOPE_OPTIONS)
 
     clip_path: str | None = None     # per logging finale
 
     # ───────────── trascrizione COMPLETA ─────────────────────
     if scope == "Tutto":
-        result = transcribe(
-            audio_path=file_audio,
-            modello=modello,
-            device=device,
-            lang=DEFAULT_LANG,
-            modalita_acc=modalita_acc,
-            tipo="completa",
+        # Genero nome file .txt includendo lingua
+        nome_base_completo = genera_nome_file_output(
+            base_name = Path(file_audio).stem,
+            modello   = modello,
+            modalita  = "accurata" if modalita_acc else "standard",
+            tipo      = "completa",
+            lang      = lang,
         )
+
+        result = transcribe(
+            audio_path   = file_audio,
+            modello      = modello,
+            device       = device,
+            lang         = lang,
+            modalita_acc = modalita_acc,
+            tipo         = "completa",
+        )
+        # Sovrascrivo txt_filename con il naming che include lingua
+        result["txt_filename"] = f"{nome_base_completo}.txt"
 
     # ───────────── trascrizione PARZIALE ─────────────────────
     else:
@@ -141,8 +156,7 @@ def main() -> None:
         if timestamp_in_secondi(fine) > timestamp_in_secondi(durata_tot):
             raise InvalidChoiceError(f"Fine ({fine}) supera durata file ({durata_tot}).")
 
-        # nome coerente clip + txt
-        from package.naming import genera_nome_file_output
+        # nome coerente clip + txt (includendo lingua)
         nome_base = genera_nome_file_output(
             base_name = Path(file_audio).stem,
             modello   = modello,
@@ -150,6 +164,7 @@ def main() -> None:
             tipo      = "parziale",
             inizio    = inizio,
             fine      = fine,
+            lang      = lang,   # passiamo anche la lingua
         )
         clip_path = str(Path(TRANSCRIPTION_DIR) / f"{nome_base}.wav")
 
@@ -166,17 +181,17 @@ def main() -> None:
 
         # trascrivi la clip
         result = transcribe(
-            audio_path = clip_path,
-            modello    = modello,
-            device     = device,
-            lang       = DEFAULT_LANG,
+            audio_path   = clip_path,
+            modello      = modello,
+            device       = device,
+            lang         = lang,
             modalita_acc = modalita_acc,
-            tipo       = "parziale",
-            inizio     = inizio,
-            fine       = fine,
+            tipo         = "parziale",
+            inizio       = inizio,
+            fine         = fine,
         )
 
-        # ── evita duplicazione del blocco (start_end)(mod) nel .txt
+        # Impostiamo txt_filename usando il nome con lingua
         result["txt_filename"] = f"{nome_base}.txt"
 
         # rimozione clip se richiesto
@@ -189,9 +204,29 @@ def main() -> None:
 
     # ───────────── salvataggio testo ─────────────────────────
     txt_path = Path(TRANSCRIPTION_DIR) / Path(result["txt_filename"]).name
-    if not _should_overwrite(txt_path):
-        print("Salvataggio annullato (file .txt già esistente).")
-        sys.exit(0)
+
+    # Controlla se esiste già un file .txt con la stessa radice "base"
+    base = Path(file_audio).stem
+    conflict_file = next(
+        (p for p in Path(TRANSCRIPTION_DIR).iterdir()
+         if p.suffix == ".txt" and p.stem.startswith(base)),
+        None
+    )
+    if conflict_file:
+        if ARGS.overwrite == "yes":
+            pass  # sovrascrive senza chiedere
+        elif ARGS.overwrite == "no":
+            print("Salvataggio annullato (file .txt già esistente).")
+            sys.exit(0)
+        else:
+            # chiede all’utente sul file già esistente
+            response = ask_choice(
+                f"⚠️  Il file '{conflict_file.name}' esiste già. Sovrascriverlo?",
+                ["Sì", "No"],
+            )
+            if response != "Sì":
+                print("Salvataggio annullato (file .txt già esistente).")
+                sys.exit(0)
 
     try:
         with open(txt_path, "w", encoding="utf-8") as f:
@@ -202,11 +237,12 @@ def main() -> None:
     # ───────────── riepilogo + log ───────────────────────────
     m, s = divmod(result["duration_proc"], 60)
     print(
-        f"\n✅ Trascrizione completata!\n"
+        "\n✅ Trascrizione completata!\n"
         f"   📄 {txt_path}\n"
         f"🕐 Tempo: {int(m)}m {s:.2f}s | "
         f"📏 Durata audio: {result['durata_audio']} | "
-        f"🧠 Device: {result['device']}"
+        f"🧠 Device: {result['device']} | "
+        f"🌐 Lingua: {lang}"
     )
 
     log_transcription(
@@ -220,6 +256,7 @@ def main() -> None:
         durata_audio = result["durata_audio"],
         proc_time    = f"{int(m)}m {s:.2f}s",
         parola_count = result["parola_count"],
+        lingua       = lang,  # nuovo parametro lingua
     )
 
     sys.exit(0)

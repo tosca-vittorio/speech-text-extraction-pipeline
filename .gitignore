@@ -1,0 +1,115 @@
+# ============================================================
+# PYTHON CORE
+# ============================================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ============================================================
+# VIRTUAL ENVIRONMENTS (MAI VERSIONARE)
+# ============================================================
+
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# ============================================================
+# TESTING / COVERAGE
+# ============================================================
+
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.mypy_cache/
+
+# ============================================================
+# IDE / EDITOR
+# ============================================================
+
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ============================================================
+# VERSIONI E RELEASE 
+# ============================================================
+release/
+
+# ============================================================
+# LOGS & RUNTIME ARTIFACTS
+# ============================================================
+
+log/
+logs/
+*.log
+
+# ============================================================
+# DOCS
+# ============================================================
+
+# Ignora tutto sotto docs
+docs/**
+
+# Eccezioni
+!docs/
+!docs/CHANGELOG.md
+
+!docs/requirements/
+!docs/requirements/requirements.txt
+!docs/requirements/requirements-cpu.txt
+!docs/requirements/requirements-cuda.txt
+#!docs/requirements/README.md
+
+# ============================================================
+# TEMPORARY FILES
+# ============================================================
+
+tmp/
+**/tmp/
+*.tmp
+*.bak
+*.swp
+
+# ============================================================
+# AUDIO / VIDEO FILES (PRODUZIONE)
+# ============================================================
+
+# Ignora media pesanti di produzione
+audio/
+videos/
+doc/03_Transcriptions/
+
+# Se hai cartelle di input/output grandi
+input/
+output/
+
+# ============================================================
+# FILE DI TEST
+# ============================================================
+
+!src/tests/resources/*.wav
+!tests/resources/*.wav
+
+# ============================================================
+# DOCKER (li aggiungeremo dopo)
+# ============================================================
+
+# Docker override files (facoltativi)
+docker-compose.override.yml
