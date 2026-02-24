@@ -75,7 +75,8 @@ def transcribe(
         modalita=modalita,
         tipo=tipo,
         inizio=inizio,
-        fine=fine
+        fine=fine,
+        lang=lang,
     )
     txt_filename = f"{nome_base}.txt"
 
