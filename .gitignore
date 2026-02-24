@@ -93,7 +93,11 @@ tmp/
 # ============================================================
 
 # Ignora media pesanti di produzione
-audio/
+audio/**
+
+!audio/
+!audio/.gitkeep
+
 videos/
 doc/03_Transcriptions/
 
