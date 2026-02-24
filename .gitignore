@@ -89,21 +89,28 @@ tmp/
 *.swp
 
 # ============================================================
-# AUDIO / VIDEO FILES (PRODUZIONE)
+# INPUT AUDIO/VIDEO
 # ============================================================
 
-# Ignora media pesanti di produzione
-audio/**
+input/audio/**
+input/video/**
 
-!audio/
-!audio/.gitkeep
+# ri-abilita la directory (necessario per poter "unignore" un file dentro)
+!input/
+!input/audio/
+!input/video/
 
-videos/
-doc/03_Transcriptions/
+# eccezione: tieni il placeholder
+!input/audio/.gitkeep
+!input/video/.gitkeep
 
-# Se hai cartelle di input/output grandi
-input/
-output/
+# ============================================================
+# OUTPUT
+# ============================================================
+
+output/transcriptions/**
+!output/transcriptions/
+!output/transcriptions/.gitkeep
 
 # ============================================================
 # FILE DI TEST
@@ -111,6 +118,7 @@ output/
 
 !src/tests/resources/*.wav
 !tests/resources/*.wav
+struttura.txt
 
 # ============================================================
 # DOCKER (li aggiungeremo dopo)
