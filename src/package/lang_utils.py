@@ -5,7 +5,7 @@ def select_language() -> str:
     Prompt interattivo per chiedere all'utente la lingua dell'audio.
     Ritorna il codice ISO della lingua scelta (es. "it", "en", "fr", "es").
     """
-    from package.transcriber import ask_choice  # import dinamico per consentire il monkeypatch
+    from package.cli_utils import ask_choice  # import dinamico per consentire il monkeypatch
     LANGUAGES = {
         "it": "Italiano",
         "en": "Inglese",
