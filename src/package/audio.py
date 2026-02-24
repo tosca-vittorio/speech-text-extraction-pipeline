@@ -6,7 +6,7 @@ import contextlib
 from datetime import timedelta
 from pathlib import Path
 
-from package.config import AUDIO_DIR, AUDIO_EXTS
+from package.config import INPUT_AUDIO_DIR, MEDIA_EXTS
 
 # -------------------------------------------------------------------------------------- #
 # Utility                                                                                 #
@@ -14,13 +14,13 @@ from package.config import AUDIO_DIR, AUDIO_EXTS
 def list_audio_files(directory: str | None = None) -> list[str]:
     """
     Restituisce i nomi dei file audio presenti in `directory`
-    (default: AUDIO_DIR) filtrando per estensioni in AUDIO_EXTS.
+    (default: INPUT_AUDIO_DIR) filtrando per estensioni in MEDIA_EXTS.
     """
-    dir_to_scan = directory or AUDIO_DIR
+    dir_to_scan = directory or INPUT_AUDIO_DIR
     return [
         f
         for f in os.listdir(dir_to_scan)
-        if f.lower().endswith(AUDIO_EXTS)
+        if f.lower().endswith(MEDIA_EXTS)
     ]
 
 

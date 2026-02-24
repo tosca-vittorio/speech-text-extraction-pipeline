@@ -7,19 +7,23 @@ import os
 # src/package/config.py → src/package → src → project-root
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
+# INPUT
 # Percorso cartella audio e lista estensioni supportate
-AUDIO_DIR  = os.path.join(BASE_DIR, "audio")
-AUDIO_EXTS = (".mp3", ".mp4", ".wav", ".m4a")
+INPUT_AUDIO_DIR = os.path.join(BASE_DIR, "input", "audio")
+INPUT_VIDEO_DIR = os.path.join(BASE_DIR, "input", "video")
 
-# eventuale cartella con audio-test
+# OUTPUT (trascrizioni)
+TRANSCRIPTION_DIR = os.path.join(BASE_DIR, "output", "transcriptions")
+
+# Estensioni supportate (audio + container video con audio)
+MEDIA_EXTS = (".mp3", ".mp4", ".wav", ".m4a")
+
+# TEST AUDIO
 TEST_AUDIO_DIR = os.path.join(BASE_DIR, "src", "tests", "resources")
 
-# Percorso cartella log e file di log
+# LOG
 LOG_DIR  = os.path.join(BASE_DIR, "log")
 LOG_FILE = os.path.join(LOG_DIR, "whisper_benchmark.log")
-
-TRANSCRIPTION_DIR = os.path.join(BASE_DIR, "doc", "03_Transcriptions")
-os.makedirs(TRANSCRIPTION_DIR, exist_ok=True)
 
 # Parametri di default per la trascrizione
 DEFAULT_LANG     = "it"

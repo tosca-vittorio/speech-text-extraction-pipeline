@@ -12,7 +12,8 @@ from pathlib import Path
 import torch
 
 from package.config import (
-    AUDIO_DIR,
+    INPUT_VIDEO_DIR,
+    INPUT_AUDIO_DIR,
     TEST_AUDIO_DIR,
     TRANSCRIPTION_DIR,
     MODEL_OPTIONS,
@@ -37,7 +38,6 @@ from package.errors import (
     ConfigError,
 )
 from package.lang_utils import select_language  # import per scelta lingua
-from package.naming import genera_nome_file_output   # import unico per naming
 
 # ───────────────────────── Arg-parsing ──────────────────────────────
 def _parse_args() -> argparse.Namespace:
@@ -82,18 +82,23 @@ def main() -> None:
         sys.exit(0)
 
     # 1) elenco file
-    files = [f"[🎧] {f}" for f in list_audio_files(AUDIO_DIR)] + \
-            [f"[🧪] {f}" for f in list_audio_files(TEST_AUDIO_DIR)]
+    files = (
+        [f"[🎧] {f}" for f in list_audio_files(INPUT_AUDIO_DIR)]
+      + [f"[🎬] {f}" for f in list_audio_files(INPUT_VIDEO_DIR)]
+      + [f"[🧪] {f}" for f in list_audio_files(TEST_AUDIO_DIR)]
+)
     if not files:
-        raise ConfigError("Nessun file audio nelle cartelle AUDIO o TEST")
+        raise ConfigError("Nessun file in input/audio, input/video o tests/resources.")
 
     scelta = ask_choice("🎵 Seleziona il file da trascrivere:", files)
     if scelta.startswith("[🎧]"):
-        file_audio = os.path.join(AUDIO_DIR, scelta[4:].strip())
+        file_audio = os.path.join(INPUT_AUDIO_DIR, scelta[4:].strip())
+    elif scelta.startswith("[🎬]"):
+        file_audio = os.path.join(INPUT_VIDEO_DIR, scelta[4:].strip())
     elif scelta.startswith("[🧪]"):
         file_audio = os.path.join(TEST_AUDIO_DIR, scelta[4:].strip())
     else:
-        file_audio = os.path.join(AUDIO_DIR, scelta.strip())
+        raise InvalidChoiceError("Scelta file non valida.")
 
     # 2) modello e device
     modello = ask_choice("🤖 Scegli il modello Whisper:", MODEL_OPTIONS)
@@ -116,15 +121,6 @@ def main() -> None:
 
     # ───────────── trascrizione COMPLETA ─────────────────────
     if scope == "Tutto":
-        # Genero nome file .txt includendo lingua
-        nome_base_completo = genera_nome_file_output(
-            base_name = Path(file_audio).stem,
-            modello   = modello,
-            modalita  = "accurata" if modalita_acc else "standard",
-            tipo      = "completa",
-            lang      = lang,
-        )
-
         result = transcribe(
             audio_path   = file_audio,
             modello      = modello,
@@ -133,8 +129,6 @@ def main() -> None:
             modalita_acc = modalita_acc,
             tipo         = "completa",
         )
-        # Sovrascrivo txt_filename con il naming che include lingua
-        result["txt_filename"] = f"{nome_base_completo}.txt"
 
     # ───────────── trascrizione PARZIALE ─────────────────────
     else:
@@ -156,17 +150,9 @@ def main() -> None:
         if timestamp_in_secondi(fine) > timestamp_in_secondi(durata_tot):
             raise InvalidChoiceError(f"Fine ({fine}) supera durata file ({durata_tot}).")
 
-        # nome coerente clip + txt (includendo lingua)
-        nome_base = genera_nome_file_output(
-            base_name = Path(file_audio).stem,
-            modello   = modello,
-            modalita  = "accurata" if modalita_acc else "standard",
-            tipo      = "parziale",
-            inizio    = inizio,
-            fine      = fine,
-            lang      = lang,   # passiamo anche la lingua
-        )
-        clip_path = str(Path(TRANSCRIPTION_DIR) / f"{nome_base}.wav")
+        safe_inizio = inizio.replace(":", "")
+        safe_fine = fine.replace(":", "")
+        clip_path = str(Path(TRANSCRIPTION_DIR) / f"{Path(file_audio).stem}_{safe_inizio}-{safe_fine}_clip.wav")
 
         # eventuale sovrascrittura clip
         if not _should_overwrite(clip_path):
@@ -191,9 +177,6 @@ def main() -> None:
             fine         = fine,
         )
 
-        # Impostiamo txt_filename usando il nome con lingua
-        result["txt_filename"] = f"{nome_base}.txt"
-
         # rimozione clip se richiesto
         if ask_choice("🗂️  Conservi la clip tagliata?", ["Sì", "No"]) == "No":
             try:
@@ -205,23 +188,16 @@ def main() -> None:
     # ───────────── salvataggio testo ─────────────────────────
     txt_path = Path(TRANSCRIPTION_DIR) / Path(result["txt_filename"]).name
 
-    # Controlla se esiste già un file .txt con la stessa radice "base"
-    base = Path(file_audio).stem
-    conflict_file = next(
-        (p for p in Path(TRANSCRIPTION_DIR).iterdir()
-         if p.suffix == ".txt" and p.stem.startswith(base)),
-        None
-    )
-    if conflict_file:
+    # Se esiste già lo stesso file di output, gestisce overwrite secondo policy
+    if txt_path.exists():
         if ARGS.overwrite == "yes":
-            pass  # sovrascrive senza chiedere
+            pass
         elif ARGS.overwrite == "no":
             print("Salvataggio annullato (file .txt già esistente).")
             sys.exit(0)
         else:
-            # chiede all’utente sul file già esistente
             response = ask_choice(
-                f"⚠️  Il file '{conflict_file.name}' esiste già. Sovrascriverlo?",
+                f"⚠️  Il file '{txt_path.name}' esiste già. Sovrascriverlo?",
                 ["Sì", "No"],
             )
             if response != "Sì":
