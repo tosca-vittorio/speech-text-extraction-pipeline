@@ -107,10 +107,12 @@ input/video/**
 # ============================================================
 # OUTPUT
 # ============================================================
-
+output/audio/**
 output/transcriptions/**
 !output/transcriptions/
+!output/audio/
 !output/transcriptions/.gitkeep
+!output/audio/.gitkeep
 
 # ============================================================
 # FILE DI TEST
