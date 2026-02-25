@@ -8,29 +8,29 @@ import package.config as cfg
 
 def test_paths_exist_and_consistent(tmp_path, monkeypatch):
     """
-    Verifica che AUDIO_DIR e LOG_DIR puntino a cartelle reali quando BASE_DIR è corretto.
+    Verifica che INPUT_AUDIO_DIR e LOG_DIR puntino a cartelle reali quando BASE_DIR è corretto.
     """
     # 1) Override di BASE_DIR su tmp_path
     monkeypatch.setattr(cfg, "BASE_DIR", str(tmp_path))
 
-    # 2) Creazione delle cartelle previste
-    (tmp_path / "audio").mkdir()
+    # 2) Creazione delle cartelle previste (nuova struttura)
+    (tmp_path / "input" / "audio").mkdir(parents=True)
     (tmp_path / "log").mkdir()
 
-    # 3) Ricarica il modulo config per ri-calcolare AUDIO_DIR e LOG_DIR
+    # 3) Ricarica il modulo config per ri-calcolare i path derivati da BASE_DIR
     importlib.reload(cfg)
 
     # 4) Verifica che i path esistano
-    assert os.path.isdir(cfg.AUDIO_DIR), f"AUDIO_DIR non trovato: {cfg.AUDIO_DIR}"
-    assert os.path.isdir(cfg.LOG_DIR),   f"LOG_DIR non trovato:   {cfg.LOG_DIR}"
+    assert os.path.isdir(cfg.INPUT_AUDIO_DIR), f"INPUT_AUDIO_DIR non trovato: {cfg.INPUT_AUDIO_DIR}"
+    assert os.path.isdir(cfg.LOG_DIR),         f"LOG_DIR non trovato: {cfg.LOG_DIR}"
 
     # 5) Verifica che LOG_FILE sia dentro LOG_DIR
     assert cfg.LOG_FILE.startswith(cfg.LOG_DIR), "LOG_FILE non in LOG_DIR"
     assert cfg.LOG_FILE.endswith("whisper_benchmark.log")
 
-    # 6) Controlla che AUDIO_EXTS sia una tupla di stringhe
-    assert isinstance(cfg.AUDIO_EXTS, tuple)
-    assert all(isinstance(ext, str) for ext in cfg.AUDIO_EXTS)
+    # 6) Controlla che MEDIA_EXTS sia una tupla di stringhe
+    assert isinstance(cfg.MEDIA_EXTS, tuple)
+    assert all(isinstance(ext, str) for ext in cfg.MEDIA_EXTS)
 
 def test_default_options_valid():
     """

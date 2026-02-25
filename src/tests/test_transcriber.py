@@ -3,6 +3,10 @@ from pathlib import Path
 import pytest
 
 import package.transcriber as trans_mod
+import package.cli_utils as cli_mod
+
+# Scelta file coerente col menu reale (prefissato)
+FILE_CHOICE = "[🎧] ok.wav"
 
 # ------------------------------------------------------------------ #
 # Fixture di isolamento globale                                      #
@@ -14,9 +18,20 @@ def isolate(monkeypatch, tmp_path):
     • Stub di funzioni I/O + cattura chiamate
     • Reimposta trans_mod.ARGS.overwrite su None a ogni test
     """
-    monkeypatch.setattr(trans_mod, "AUDIO_DIR", str(tmp_path))
+    # input dirs (audio/video/test) → tutti puntano al tmp
+    monkeypatch.setattr(trans_mod, "INPUT_AUDIO_DIR", str(tmp_path))
+    monkeypatch.setattr(trans_mod, "INPUT_VIDEO_DIR", str(tmp_path))
+    monkeypatch.setattr(trans_mod, "TEST_AUDIO_DIR", str(tmp_path))
+
+    # output dir trascrizioni → tmp
     monkeypatch.setattr(trans_mod, "TRANSCRIPTION_DIR", str(tmp_path))
     trans_mod.ARGS.overwrite = None                                      # reset
+
+    monkeypatch.setattr(
+        cli_mod,
+        "ask_choice",
+        lambda *a, **k: trans_mod.ask_choice(*a, **k)
+    )
 
     wav_in   = tmp_path / "ok.wav"
     txt_out  = tmp_path / "ok.txt"           # nome segnaposto; il naming reale cambia
@@ -86,10 +101,10 @@ def test_exit_immediate(monkeypatch, capsys):
 def test_flusso_completa(monkeypatch, capsys, isolate):
     seq = iter([
         "Trascrivi",               # Menu iniziale
-        "ok.wav",                  # Selezione file
+        FILE_CHOICE,               # Selezione file
         "tiny",                    # Scelta modello
         "cpu",                     # Scelta device
-        "en (Inglese)",            # <<< NUOVO: scelta lingua
+        "en (Inglese)",            # Scelta lingua
         "Standard – filtro automatico",  # Modalità
         "Tutto",                   # Ambito
         "Esci"                     # Uscita finale
@@ -110,10 +125,10 @@ def test_flusso_completa(monkeypatch, capsys, isolate):
 def test_flusso_parziale(monkeypatch, capsys, isolate):
     seq = iter([
         "Trascrivi",               # Menu iniziale
-        "ok.wav",                  # Selezione file
+        FILE_CHOICE,               # Selezione file
         "tiny",                    # Scelta modello
         "cpu",                     # Scelta device
-        "en (Inglese)",            # <<< NUOVO: scelta lingua
+        "en (Inglese)",            # Scelta lingua
         "Standard – filtro automatico",  # Modalità
         "Solo una parte",          # Ambito
         "No"                       # Risposta al prompt “Conservi clip?”
@@ -137,10 +152,10 @@ def test_flusso_parziale(monkeypatch, capsys, isolate):
 def test_error_handling_and_recovery(monkeypatch):
     seq = iter([
         "Trascrivi",               # Menu iniziale
-        "ok.wav",                  # Selezione file
+        FILE_CHOICE,               # Selezione file
         "tiny",                    # Scelta modello
         "cpu",                     # Scelta device
-        "en (Inglese)",            # <<< NUOVO: scelta lingua
+        "en (Inglese)",             # Scelta lingua
         "Standard – filtro automatico",  # Modalità
         "Solo una parte",          # Ambito
         "No"                       # Risposta al prompt “Conservi clip?”
@@ -166,10 +181,10 @@ def test_overwrite_yes(monkeypatch, capsys, isolate, tmp_path):
 
     seq = iter([
         "Trascrivi",               # Menu iniziale
-        "ok.wav",                  # Selezione file
+        FILE_CHOICE,               # Selezione file
         "tiny",                    # Scelta modello
         "cpu",                     # Scelta device
-        "en (Inglese)",            # <<< NUOVO: scelta lingua
+        "en (Inglese)",            # Scelta lingua
         "Standard – filtro automatico",  # Modalità
         "Tutto",                   # Ambito
         "Esci"                     # Uscita finale
@@ -191,10 +206,10 @@ def test_overwrite_no(monkeypatch, capsys, isolate, tmp_path):
 
     seq = iter([
         "Trascrivi",               # Menu iniziale
-        "ok.wav",                  # Selezione file
+        FILE_CHOICE,               # Selezione file
         "tiny",                    # Scelta modello
         "cpu",                     # Scelta device
-        "en (Inglese)",            # <<< NUOVO: scelta lingua
+        "en (Inglese)",            # Scelta lingua
         "Standard – filtro automatico",  # Modalità
         "Tutto",                   # Ambito
         "Esci"                     # Uscita finale
@@ -217,10 +232,10 @@ def test_overwrite_prompt_no(monkeypatch, capsys, isolate, tmp_path):
     # prima parte normale, poi alla domanda di overwrite rispondi "No"
     seq = iter([
         "Trascrivi",               # Menu iniziale
-        "ok.wav",                  # Selezione file
+        FILE_CHOICE,               # Selezione file
         "tiny",                    # Scelta modello
         "cpu",                     # Scelta device
-        "en (Inglese)",            # <<< NUOVO: scelta lingua
+        "en (Inglese)",            # Scelta lingua
         "Standard – filtro automatico",  # Modalità
         "Tutto",                   # Ambito
         "No"                       # Risposta al prompt overwrite
@@ -239,10 +254,10 @@ def test_overwrite_prompt_yes(monkeypatch, capsys, isolate, tmp_path):
 
     seq = iter([
         "Trascrivi",               # Menu iniziale
-        "ok.wav",                  # Selezione file
+        FILE_CHOICE,               # Selezione file
         "tiny",                    # Scelta modello
         "cpu",                     # Scelta device
-        "en (Inglese)",            # <<< NUOVO: scelta lingua
+        "en (Inglese)",            # Scelta lingua
         "Standard – filtro automatico",  # Modalità
         "Tutto",                   # Ambito
         "Sì"                       # accetta sovrascrittura

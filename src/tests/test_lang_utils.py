@@ -4,17 +4,15 @@ import pytest
 from package.lang_utils import select_language
 
 def test_select_language_returns_code(monkeypatch):
-    # Simulo che ask_choice (in package.transcriber) torni "en (Inglese)"
-    responses = iter(["en (Inglese)"])
-    def fake_ask_choice(prompt, options):
+    # Patchiamo nel punto giusto: package.cli_utils.ask_choice
+    import package.cli_utils as cli_mod
+
+    def fake_ask_choice(prompt, options, max_retries=3):
         assert "In quale lingua" in prompt
         assert any(opt.startswith("en (Inglese)") for opt in options)
-        return next(responses)
+        return "en (Inglese)"
 
-    # Monkey‐patch di ask_choice dentro a package.transcriber
-    import package.transcriber as trans_mod
-    monkeypatch.setattr(trans_mod, "ask_choice", fake_ask_choice)
+    monkeypatch.setattr(cli_mod, "ask_choice", fake_ask_choice)
 
-    # La funzione deve restituire solo "en"
     lang_code = select_language()
     assert lang_code == "en"
