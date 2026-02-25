@@ -57,7 +57,7 @@ def test_transcribe_completa_keys_and_values(tmp_path):
     assert res["device"] == "fake-cpu"
 
     # nuovo formato: spazio prima della parentesi
-    assert res["txt_filename"] == "file (sml_std).txt"
+    assert res["txt_filename"] == "file (sml_std) (lang_it).txt"
 
 # ------------------------------------------------------------------ #
 # 2) Trascrizione PARZIALE – pattern del nome                        #
@@ -81,7 +81,7 @@ def test_transcribe_parziale_pattern(tmp_path):
     assert res["device"] == "fake-cuda"
 
     # nome file atteso: clip (0003_0008) (bse_acc).txt
-    assert re.match(r"^clip \(0003_0008\) \(bse_acc\)\.txt$", res["txt_filename"])
+    assert re.match(r"^clip \(0003_0008\) \(bse_acc\) \(lang_it\)\.txt$", res["txt_filename"])
 
 # ------------------------------------------------------------------ #
 # 3) Parziale senza timestamp => TypeError                           #
