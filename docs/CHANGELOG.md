@@ -16,6 +16,12 @@ Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/) c
 ### Documentation
 - Allineati i riferimenti incrociati tra README, ARCHITECTURE e CHANGELOG.
 
+### Tests
+- Allineata la suite ai contract correnti:
+  - path config aggiornati (`INPUT_AUDIO_DIR`, `MEDIA_EXTS`);
+  - naming output con tag lingua `(lang_<codice>)`;
+  - flow CLI: scelta lingua via `package.cli_utils.ask_choice` e menu file prefissato (`[🎧]/[🎬]/[🧪]`). (408a302, c060632)
+
 ---
 
 ## [2.1.0] - 2025-01-13
