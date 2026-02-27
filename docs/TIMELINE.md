@@ -46,7 +46,7 @@ Se lo step tocca Docker:
 
 **Rischi dichiarati (aggiornati):**
 - ✅ Blocco “cwd-agnostic test execution” risolto (A1).
-- 🟡 Hardening `tools/clean_project.sh` in corso (A2).
+- ✅ Hardening `tools/clean_project.sh` completato  (A2).
 - ⬜ Packaging installabile + entrypoint CLI (A3).
 
 ---
@@ -83,31 +83,30 @@ cd ..
 
 ---
 
-## 🟡 A2 — Hardening `tools/clean_project.sh` (SAFE by default)
+## ✅ A2 — Hardening `tools/clean_project.sh` (SAFE by default)
 
 **Obiettivo:** avere uno script di pulizia **sicuro**, **mirato**, con output **verificabile** e opt-in per aree rischiose.
 
-**Stato attuale:**
+**Commit di chiusura:**
+- `e60b0ad` — `chore(tools): harden clean_project script (safe-by-default)`
 
-* Modifiche di hardening presenti **localmente** su `tools/clean_project.sh` ma **non ancora versionate** (work in progress).
-* `git status -sb` mostra: `M tools/clean_project.sh`.
+**Cambiamenti (high-level):**
+- SAFE-by-default: allowlist mirata (root cache + `src/` + `tools/` + `src/tests/tmp/**`).
+- Opt-in espliciti (OFF di default): `PURGE_LOGS`, `PURGE_OUTPUT`, `CLEAN_VENV`.
+- Root guard (marker `README.md` + `src/` + `tools/`) per evitare esecuzioni fuori repo.
+- Output strutturato (sezioni + contatori) e modalità `DRY_RUN`/`VERBOSE`.
 
-**Decisioni consolidate (repo):**
-
-* `logs/` è tracciata solo come placeholder:
-
-  * `.gitignore` ignora `logs/**` ma include `logs/.gitkeep`.
-* `tmp/` è ignorata (project-local, untracked) e non richiede `.gitkeep`.
-
-**DoD (A2) — da chiudere:**
-
-* Committare lo script hardenizzato.
-* Evidenze:
-
+**Evidenze (A2) — raggiunto:**
 ```bash
+# dry-run auditabile
 DRY_RUN=true VERBOSE=true tools/clean_project.sh | head -n 120
-git status -sb
+
+# esecuzione reale safe (default: nessun opt-in)
+DRY_RUN=false VERBOSE=true tools/clean_project.sh
+
+# qualità repo
 python -m pytest
+# -> 49 passed
 ```
 
 ---

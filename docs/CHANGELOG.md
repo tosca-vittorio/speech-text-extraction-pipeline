@@ -37,6 +37,19 @@ Nel ciclo corrente il repository `speech-text-extraction-pipeline` è stato cons
 
 ---
 
+- **`e60b0ad` — chore(tools): harden clean_project script (safe-by-default)**
+  - **Type:** CHANGED
+  - **Cosa cambia:** riscrittura hardenizzata di `tools/clean_project.sh` con approccio SAFE-by-default.
+  - **Dettagli:**
+    - Allowlist mirata (root cache + `src/` + `tools/` + `src/tests/tmp/**`)
+    - Opt-in espliciti (OFF di default): `PURGE_LOGS`, `PURGE_OUTPUT`, `CLEAN_VENV`
+    - Root guard (`README.md` + `src/` + `tools/`) per prevenire esecuzioni fuori repository
+    - Output strutturato (sezioni + contatori) e modalità `DRY_RUN` / `VERBOSE`
+  - **Impatto:** pulizia deterministica, auditabile e CI/Docker-ready senza rischio di cancellazioni accidentali.
+  - **Evidenze:** `DRY_RUN=true VERBOSE=true tools/clean_project.sh` ✅ · `python -m pytest` ✅ (49 passed)
+
+---
+
 - **`4d25b47` — fix(pytest): force basetemp to src/tests/tmp cwd-agnostic**
   - **Type:** FIXED
   - **Cosa corregge:** elimina i failure in esecuzione test da sottocartelle (es. `cd src && python -m pytest`) dovuti a `--basetemp=src/tests/tmp` interpretato come path relativo a cwd.
