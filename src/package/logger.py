@@ -5,9 +5,6 @@ from datetime import datetime
 
 from package.config import LOG_DIR, LOG_FILE
 
-# Assicuriamoci che la cartella di log esista
-os.makedirs(LOG_DIR, exist_ok=True)
-
 def log_transcription(
     hostname: str,
     file_audio: str,
@@ -60,5 +57,6 @@ def log_transcription(
 
     riga += "\n"
 
+    os.makedirs(LOG_DIR, exist_ok=True)
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(riga)

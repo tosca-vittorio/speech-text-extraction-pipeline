@@ -22,7 +22,7 @@ MEDIA_EXTS = (".mp3", ".mp4", ".wav", ".m4a")
 TEST_AUDIO_DIR = os.path.join(BASE_DIR, "src", "tests", "resources")
 
 # LOG
-LOG_DIR  = os.path.join(BASE_DIR, "log")
+LOG_DIR  = os.path.join(BASE_DIR, "logs")
 LOG_FILE = os.path.join(LOG_DIR, "whisper_benchmark.log")
 
 # Parametri di default per la trascrizione
