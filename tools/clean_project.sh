@@ -1,74 +1,211 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # =====================
 # CLEAN_PROJECT.SH
-# Pulizia sicura del progetto Python con struttura standardizzata
+# Pulizia progetto Python (SAFE by default, output compatto)
 # =====================
 
-SCRIPT_VERSION="1.0.0"
+set -Eeuo pipefail
+
+SCRIPT_VERSION="1.4.5"
 echo "clean_project.sh v$SCRIPT_VERSION"
 
-# === CONFIGURAZIONE ===
-# Imposta a true per simulare senza cancellare:
-#   DRY_RUN=true ./clean_project.sh
-DRY_RUN="${DRY_RUN:-false}"
-echo "DEBUG: DRY_RUN is '$DRY_RUN'"
+# ---------------------
+# CONFIG (env flags)
+# ---------------------
+DRY_RUN="${DRY_RUN:-false}"               # DRY_RUN=true tools/clean_project.sh
+VERBOSE="${VERBOSE:-false}"               # VERBOSE=true tools/clean_project.sh
+REQUIRE_ROOT_MARKERS="${REQUIRE_ROOT_MARKERS:-true}"
 
-# Verifica di essere nella root del progetto (README.md e src/)
-if [[ ! -f README.md || ! -d src ]]; then
-  echo "❌ Esegui lo script dalla root del progetto (dove c'è README.md e src/)."
-  exit 1
+# Opt-in (OFF di default)
+CLEAN_VENV="${CLEAN_VENV:-false}"         # pulizia soft dentro .venv/ (pycache + pyc)
+PURGE_LOGS="${PURGE_LOGS:-false}"         # pulisce logs/*.log (mantiene .gitkeep)
+PURGE_OUTPUT="${PURGE_OUTPUT:-false}"     # pulisce output/** (rischioso)
+
+echo "DEBUG: DRY_RUN='$DRY_RUN' VERBOSE='$VERBOSE' CLEAN_VENV='$CLEAN_VENV' PURGE_LOGS='$PURGE_LOGS' PURGE_OUTPUT='$PURGE_OUTPUT'"
+
+# ---------------------
+# LOG
+# ---------------------
+log()    { echo "[INFO]   $*"; }
+warn()   { echo "[WARN]   $*" >&2; }
+action() { echo "[ACTION] $*"; }
+err()    { echo "[ERROR]  $*" >&2; }
+
+is_true() {
+  case "${1,,}" in
+    true|1|yes|y|on) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# ---------------------
+# ROOT GUARD
+# ---------------------
+if is_true "$REQUIRE_ROOT_MARKERS"; then
+  if [[ ! -f README.md || ! -d src || ! -d tools ]]; then
+    err "Esegui lo script dalla root del progetto (README.md + src/ + tools/)."
+    exit 1
+  fi
 fi
 
-log_action() { echo "[ACTION] $1"; }
+ROOT_PWD="$(pwd)"
+log "Avvio pulizia del progetto in: $ROOT_PWD (dry-run=$DRY_RUN)"
 
-safe_remove() {
-  if [ "$DRY_RUN" = "true" ]; then
-    [ -e "$1" ] || [ -L "$1" ] && echo "[DRY-RUN] rm -rf $1"
-  else
-    if [ -e "$1" ] || [ -L "$1" ]; then
-      rm -rf "$1" 2>/dev/null
-      log_action "Rimosso: $1"
+# ---------------------
+# COUNTERS
+# ---------------------
+ITEMS=0
+SECTION_BEFORE=0
+
+section_begin() {
+  local title="$1"
+  SECTION_BEFORE="$ITEMS"
+  log "$title"
+}
+
+section_end() {
+  local delta=$((ITEMS - SECTION_BEFORE))
+  log " -> items: $delta"
+}
+
+# ---------------------
+# SAFE RM
+# ---------------------
+safe_rm() {
+  local target="$1"
+  [[ -z "$target" ]] && return 0
+
+  if [[ -e "$target" || -L "$target" ]]; then
+    if is_true "$DRY_RUN"; then
+      ((ITEMS+=1))
+      is_true "$VERBOSE" && echo "[DRY-RUN] rm -rf -- '$target'"
+      return 0
     fi
+
+    # IMPORTANT: su Windows può fallire per file lock -> NON nascondere.
+    if rm -rf -- "$target" 2>/dev/null; then
+      ((ITEMS+=1))
+      is_true "$VERBOSE" && action "Rimosso: $target"
+    else
+      warn "Impossibile rimuovere (file lock / permessi?): $target"
+      return 1
+    fi
+  else
+    is_true "$VERBOSE" && log "Non trovato: $target"
   fi
 }
 
-safe_find_remove() {
-  local base=$1; shift
-  while IFS= read -r -d '' item; do
-    safe_remove "$item"
-  done < <(find "$base" "$@" -print0)
+# Find mirata (NON su "."): solo dove serve davvero
+find_and_rm() {
+  local base="$1"; shift
+  [[ -e "$base" ]] || { is_true "$VERBOSE" && log "Base non trovata: $base"; return 0; }
+
+  while IFS= read -r -d '' p; do
+    safe_rm "$p" || true
+  done < <(find "$base" "$@" -print0 2>/dev/null || true)
 }
 
-echo "Avvio pulizia del progetto... (dry-run=$DRY_RUN)"
+# ---------------------
+# RUN (SAFE allowlist)
+# ---------------------
 
-echo "1) Pulizia cache Python (__pycache__, .pytest_cache, ecc.)..."
-safe_find_remove . -type d -name '__pycache__'
-safe_remove .pytest_cache
-safe_remove .mypy_cache
-safe_find_remove . -type d -name '*.egg-info'
-safe_remove build
+# 0) Root-level (senza find globale)
+section_begin "0) Root-level cache (SAFE)..."
+safe_rm "__pycache__"     || true
+safe_rm ".pytest_cache"   || true
+safe_rm ".mypy_cache"     || true
+safe_rm ".ruff_cache"     || true
+safe_rm ".coverage"       || true
+safe_rm "coverage.xml"    || true
+safe_rm "htmlcov"         || true
+safe_rm ".tox"            || true
+safe_rm ".nox"            || true
+safe_rm "build"           || true
+safe_rm "dist"            || true
+# egg-info può essere anche in root (teniamo scan molto shallow)
+find_and_rm . -maxdepth 2 -type d -name "*.egg-info"
+section_end
 
-echo "2) Pulizia file .pyc..."
-safe_find_remove . -type f -name '*.pyc'
+# 1) Cache sotto src/ e tools/ (scansione mirata, veloce)
+section_begin "1) Cache Python + build artifacts sotto src/ e tools/ (SAFE)..."
+find_and_rm "src"   -type d -name "__pycache__"
+find_and_rm "tools" -type d -name "__pycache__"
+find_and_rm "src"   -type d -name "*.egg-info"
+find_and_rm "tools" -type d -name "*.egg-info"
+section_end
 
-echo "3) Svuotamento cartella src/tests/tmp/ ..."
-safe_find_remove src/tests/tmp -type f
-safe_find_remove src/tests/tmp -type d ! -path 'src/tests/tmp'
+# 2) Compilati Python solo sotto src/ e tools/ (SAFE)
+section_begin "2) File compilati Python (*.pyc, *.pyo) sotto src/ e tools/..."
+find_and_rm "src"   -type f \( -name "*.pyc" -o -name "*.pyo" \)
+find_and_rm "tools" -type f \( -name "*.pyc" -o -name "*.pyo" \)
+section_end
 
-echo "4) Pulizia .txt e .wav temporanei (esclusi doc/ e resources/)..."
-while IFS= read -r -d '' file; do
-  safe_remove "$file"
-done < <(find . -type f \( -name '*.txt' -o -name '*.wav' \) \
-           ! -path './doc/*' \
-           ! -path './src/tests/resources/*' -print0)
+# 3) tmp test: svuota src/tests/tmp/** (SAFE)
+section_begin "3) tmp test: svuota src/tests/tmp/** (SAFE)..."
+TMP_DIR="src/tests/tmp"
+if [[ -d "$TMP_DIR" ]]; then
+  if is_true "$DRY_RUN"; then
+    # In dry-run mostra cosa verrebbe rimosso
+    while IFS= read -r -d '' p; do
+      safe_rm "$p" || true
+    done < <(find "$TMP_DIR" -mindepth 1 -print0 2>/dev/null || true)
+  else
+    # In reale: elimina tutto sotto tmp in un colpo solo, senza rumore "Non trovato"
+    rm -rf -- "$TMP_DIR"/* "$TMP_DIR"/.[!.]* "$TMP_DIR"/..?* 2>/dev/null || true
+    # Non incrementiamo ITEMS in modo preciso qui: è "bulk delete"
+    is_true "$VERBOSE" && action "Svuotato: $TMP_DIR/**"
+  fi
+else
+  is_true "$VERBOSE" && log "$TMP_DIR non presente"
+fi
+section_end
 
-echo "5) Rimozione file .log fuori da /log..."
-while IFS= read -r -d '' file; do
-  safe_remove "$file"
-done < <(find . -type f -name '*.log' ! -path './log/*' -print0)
+# ---------------------
+# OPT-IN
+# ---------------------
 
-echo "6) Pulizia soft di venv (__pycache__ e .pyc)..."
-safe_find_remove ./venv -type d -name '__pycache__'
-safe_find_remove ./venv -type f -name '*.pyc'
+if is_true "$PURGE_LOGS"; then
+  section_begin "4) PURGE_LOGS=true: pulizia logs/*.log (opt-in)..."
+  if [[ -d logs ]]; then
+    while IFS= read -r -d '' p; do
+      case "$p" in
+        */.gitkeep) : ;;
+        *) safe_rm "$p" || true ;;
+      esac
+    done < <(find logs -type f -name "*.log" -print0 2>/dev/null || true)
+  fi
+  section_end
+else
+  log "4) SKIP logs/: per pulire logs/*.log -> PURGE_LOGS=true"
+fi
 
-echo "Pulizia completata con successo."
+if is_true "$PURGE_OUTPUT"; then
+  section_begin "5) PURGE_OUTPUT=true: pulizia output/** (opt-in, rischioso)..."
+  if [[ -d output ]]; then
+    while IFS= read -r -d '' p; do
+      case "$p" in
+        */.gitkeep) : ;;
+        *) safe_rm "$p" || true ;;
+      esac
+    done < <(find output -mindepth 1 -print0 2>/dev/null || true)
+  fi
+  section_end
+else
+  log "5) SKIP output/: per pulire output/** -> PURGE_OUTPUT=true"
+fi
+
+if is_true "$CLEAN_VENV"; then
+  section_begin "6) CLEAN_VENV=true: pulizia soft venv (pycache + pyc, opt-in)..."
+  if [[ -d .venv ]]; then
+    find_and_rm ".venv" -type d -name "__pycache__"
+    find_and_rm ".venv" -type f \( -name "*.pyc" -o -name "*.pyo" \)
+  elif [[ -d venv ]]; then
+    find_and_rm "venv" -type d -name "__pycache__"
+    find_and_rm "venv" -type f \( -name "*.pyc" -o -name "*.pyo" \)
+  fi
+  section_end
+else
+  log "6) SKIP venv/: per pulire __pycache__/pyc in venv -> CLEAN_VENV=true"
+fi
+
+log "Pulizia completata. items_removed_or_proposed=$ITEMS (dry-run=$DRY_RUN)"
