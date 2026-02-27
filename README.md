@@ -1,31 +1,57 @@
-# 🎙️ Speech Text Extraction Pipeline
+# 🎙️ Speech Text Extraction Pipeline 🚀
 
-Pipeline CLI Python per trascrivere audio/video con Whisper, con flusso guidato, gestione clip parziali, naming consistente degli output e logging benchmark.
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![Platform](https://img.shields.io/badge/platform-CLI-lightgrey)
+![Tests](https://img.shields.io/badge/tests-49%20passed-brightgreen)
+
+Pipeline CLI Python per trascrivere audio/video tramite Whisper, con flusso guidato, gestione clip parziali, naming consistente degli output e logging benchmark.
+
+## Quick Start
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate   # Windows
+# source .venv/bin/activate  # Linux / macOS
+
+pip install -r docs/requirements/requirements.txt
+python -m package.transcriber
+```
+
+> Nota: se vuoi un setup CPU-only o CUDA, usa i file in `docs/requirements/`.
+
+---
 
 ## 1) Stato attuale del progetto (AS-IS)
 
-Il progetto è un **tool CLI locale** (non web app) con architettura modulare in `src/package`.
+Il progetto è un **tool CLI locale** (non web app) con architettura modulare sotto `src/package`.
 
-Funzionalità operative attuali:
-- trascrizione **completa** o **parziale** (con taglio clip),
-- scelta modello Whisper (`tiny`, `base`, `small`, `medium`),
-- scelta device (`cpu`, `cuda`, con fallback automatico a CPU se CUDA non disponibile),
-- scelta lingua (`it`, `en`, `fr`, `es`) usata sia in trascrizione sia nel naming/log,
-- protezione sovrascrittura output via `--overwrite yes|no` o prompt interattivo,
-- log benchmark su file dedicato.
+Caratteristiche operative attuali:
+
+- Trascrizione **completa** o **parziale** (taglio clip via ffmpeg)
+- Scelta modello Whisper (`tiny`, `base`, `small`, `medium`)
+- Scelta device (`cpu`, `cuda`, con fallback automatico a CPU)
+- Selezione lingua (`it`, `en`, `fr`, `es`)
+- Naming output con tag lingua `(lang_<codice>)`
+- Protezione sovrascrittura (`--overwrite yes|no` o prompt)
+- Logging benchmark persistente in `logs/`
+- Suite test eseguibile sia da root sia da `src/` tramite `python -m pytest`
+
+---
 
 ## 2) Prerequisiti
 
 - Python 3.10+
 - `ffmpeg` disponibile nel `PATH`
-- dipendenze Python in `docs/requirements/`
+- Ambiente virtuale raccomandato
 
-### Verifica rapida prerequisiti
+Verifica:
 
 ```bash
 python --version
 ffmpeg -version
 ```
+
+---
 
 ## 3) Installazione
 
@@ -33,50 +59,77 @@ ffmpeg -version
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scripts\activate
+```
+
+Attivazione:
+
+- Windows:
+```bash
+.venv\Scripts\activate
+```
+
+- Linux / macOS:
+```bash
+source .venv/bin/activate
+```
+
+Upgrade pip:
+
+```bash
 python -m pip install --upgrade pip
 ```
 
+---
+
 ### 3.2 Installazione dipendenze
 
-#### Opzione standard
+Le requirements sono suddivise per profilo in `docs/requirements/`.
+
+#### Standard
 
 ```bash
 pip install -r docs/requirements/requirements.txt
 ```
 
-#### Opzione CPU-only
+#### CPU-only
 
 ```bash
 pip install -r docs/requirements/requirements-cpu.txt
 ```
 
-#### Opzione CUDA
+#### CUDA
 
 ```bash
 pip install -r docs/requirements/requirements-cuda.txt
 ```
 
-> Nota: se installi profilo CPU/CUDA, assicurati che combaci con il tuo ambiente locale (driver/runtime GPU, wheel torch compatibili).
+> Assicurarsi che il profilo combaci con il proprio ambiente (driver GPU, wheel torch compatibili).
+
+---
 
 ## 4) Esecuzione
 
-### 4.1 Modalità interattiva (consigliata)
+### Modalità interattiva (attuale)
 
 Da root repository:
 
 ```bash
-PYTHONPATH=src python -m package.transcriber
+python -m package.transcriber
 ```
 
-In alternativa da `src/`:
+Oppure da `src/`:
 
 ```bash
 cd src
 python -m package.transcriber
 ```
 
-### 4.2 Flag disponibili
+> Nota: attualmente il progetto utilizza layout `src/` non installabile.
+> In una futura milestone (A3) verrà introdotto `pyproject.toml` con installazione editable.
+
+---
+
+### Flag disponibili
 
 ```bash
 python -m package.transcriber --overwrite yes
@@ -85,85 +138,182 @@ python -m package.transcriber --overwrite no
 
 Semantica:
 
-* `--overwrite yes`: sovrascrive automaticamente file di output in conflitto,
-* `--overwrite no`: non sovrascrive mai,
-* senza flag: chiede conferma via prompt.
+- `--overwrite yes` → sovrascrive automaticamente
+- `--overwrite no` → non sovrascrive mai
+- senza flag → chiede conferma via prompt
+
+---
 
 ## 5) Flusso CLI reale
 
-All'avvio il tool chiede, in sequenza:
+All’avvio:
 
-1. azione (`Trascrivi` / `Esci`),
-2. file audio (da `audio/` o `src/tests/resources/`),
-3. modello Whisper,
-4. device (`cuda`/`cpu`),
-5. lingua audio,
-6. modalità (`Standard` / `Accurata`),
-7. scope (`Tutto` / `Solo una parte`).
+1. Azione (`Trascrivi` / `Esci`)
+2. Selezione file da `input/`
+3. Modello Whisper
+4. Device (`cuda` / `cpu`)
+5. Lingua audio
+6. Modalità (`Standard` / `Accurata`)
+7. Scope (`Tutto` / `Solo una parte`)
 
-Se scope è parziale:
+Se scope parziale:
 
-* valida timestamp inizio/fine,
-* taglia la clip via ffmpeg,
-* opzionalmente conserva o elimina la clip tagliata.
+- Validazione timestamp
+- Taglio clip via ffmpeg
+- Possibilità di conservare o eliminare la clip temporanea
 
-Infine:
+Al termine:
 
-* salva il `.txt` in cartella trascrizioni,
-* scrive riga benchmark su log,
-* stampa riepilogo con tempo, durata audio, device e lingua.
+- Salvataggio `.txt` in `output/transcriptions/`
+- Scrittura riga benchmark in `logs/whisper_benchmark.log`
+- Riepilogo console (tempo, durata, device, lingua)
 
-## 6) Struttura repository (essenziale)
+---
+
+## 6) Struttura repository
 
 ```text
 .
 ├── README.md
-├── ARCHITECTURE.md
+├── .gitignore
+├── pytest.ini
+│
 ├── docs/
 │   ├── CHANGELOG.md
+│   ├── TIMELINE.md
+│   ├── ARCHITECTURE.md
 │   └── requirements/
-├── src/
-│   ├── package/
-│   │   ├── transcriber.py
-│   │   ├── core.py
-│   │   ├── audio.py
-│   │   ├── naming.py
-│   │   ├── logger.py
-│   │   ├── cli_utils.py
-│   │   ├── lang_utils.py
-│   │   ├── config.py
-│   │   └── errors.py
-│   └── tests/
-├── conftest.py
-└── pytest.ini
+│       ├── requirements.txt
+│       ├── requirements-cpu.txt
+│       └── requirements-cuda.txt
+│
+├── input/
+│   └── audio/
+│       └── .gitkeep
+│
+├── output/
+│   ├── audio/
+│   │   └── .gitkeep
+│   └── transcriptions/
+│       └── .gitkeep
+│
+├── logs/
+│   └── .gitkeep
+│
+├── tools/
+│   └── clean_project.sh
+│
+└── src/
+    ├── package/
+    │   ├── __init__.py
+    │   ├── transcriber.py
+    │   ├── core.py
+    │   ├── audio.py
+    │   ├── naming.py
+    │   ├── logger.py
+    │   ├── cli_utils.py
+    │   ├── lang_utils.py
+    │   ├── config.py
+    │   └── errors.py
+    │
+    └── tests/
+        ├── __init__.py
+        ├── conftest.py
+        ├── test_audio.py
+        ├── test_cli_utils.py
+        ├── test_config.py
+        ├── test_core.py
+        ├── test_lang_utils.py
+        ├── test_logger.py
+        ├── test_naming.py
+        ├── test_transcriber.py
+        │
+        └── resources/
+            └── *.wav
 ```
+---
 
 ## 7) Path runtime importanti
 
-Configurati centralmente in `src/package/config.py`:
+Definiti centralmente in `src/package/config.py`.
 
-* input utente: `audio/`
-* input test: `src/tests/resources/`
-* output trascrizioni: `doc/03_Transcriptions/`
-* log benchmark: `log/whisper_benchmark.log`
+- Input media: `input/audio/`
+- Output trascrizioni: `output/transcriptions/`
+- Log benchmark: `logs/whisper_benchmark.log`
+- Temp pytest: `src/tests/tmp/` (non versionata; path forzato via `src/tests/conftest.py`)
+
+---
 
 ## 8) Testing
 
-Dal root repository:
+La suite è **cwd-agnostic**: eseguibile sia da root sia da `src/`:
+
+Da root:
 
 ```bash
-PYTHONPATH=src pytest -q
+python -m pytest
 ```
 
-Se mancano `torch` o `whisper`, i test che importano quei moduli possono fallire già in fase di collection.
-
-## 9) Convenzioni output (alto livello)
-
-La generazione nomi output è gestita da `naming.py` e include metadati utili (modello, modalità, intervallo e lingua quando disponibile) per mantenere tracciabilità dei file trascritti.
-
-## 10) Documentazione correlata
-
-* Architettura tecnica: [`ARCHITECTURE.md`](./ARCHITECTURE.md)
-* Storico modifiche: [`docs/CHANGELOG.md`](./docs/CHANGELOG.md)
+Attualmente: **49 test passed**
 
 ---
+
+## 9) Script di pulizia
+
+Script sicuro in:
+
+```bash
+tools/clean_project.sh
+```
+
+Modalità preview:
+
+```bash
+DRY_RUN=true VERBOSE=true tools/clean_project.sh
+```
+
+Comportamento:
+
+- Pulisce cache Python, pytest, build artifacts
+- NON cancella file `.txt` o media utente
+- Output e logs sono opt-in
+
+---
+
+## 10) Convenzioni naming output
+
+Gestite da `naming.py`.
+
+I file includono:
+
+- nome base input
+- modello
+- modalità
+- intervallo (se parziale)
+- lingua `(lang_<codice>)`
+
+Questo garantisce tracciabilità completa.
+
+---
+
+## 11) Documentazione correlata
+
+- Architettura tecnica: `docs/ARCHITECTURE.md`
+- Storico modifiche: `docs/CHANGELOG.md`
+- Timeline ingegneristica: `docs/TIMELINE.md`
+
+---
+
+## 12) Roadmap tecnica (estratto)
+
+Prossime milestone:
+
+- Packaging installabile (`pyproject.toml`)
+- Docker CPU baseline
+- Modalità batch non interattiva
+- Smoke test E2E
+- CI minimale
+
+---
+
+© Speech Text Extraction Pipeline

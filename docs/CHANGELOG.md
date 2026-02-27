@@ -1,69 +1,191 @@
-# Changelog
+# CHANGELOG — `speech-text-extraction-pipeline` (Python · Whisper CLI)
 
-Tutte le modifiche rilevanti del progetto sono registrate in questo file.
+> Type legend:
+> **ADDED** = introduzione di elementi nuovi (scaffold/moduli/feature),
+> **CHANGED** = modifica/refactor/docs/hardening,
+> **FIXED** = correzione puntuale (bug/regressione/typo).
 
-Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/) con versione semantica.
-
-## [2.1.1]
-
-### Changed
-- Riscritta la documentazione principale (`README.md`) in versione più dettagliata e coerente con lo stato attuale del progetto (setup, esecuzione, flusso CLI, path runtime, testing).
-- Rifinita la struttura del changelog per mantenerlo leggibile e incrementale, evitando sezioni verbose non manutenibili.
-
-### Added
-- Creato `ARCHITECTURE.md` con descrizione estesa di layer, moduli, flusso runtime, invarianti e possibili evoluzioni.
-
-### Documentation
-- Allineati i riferimenti incrociati tra README, ARCHITECTURE e CHANGELOG.
-
-### Tests
-- Allineata la suite ai contract correnti:
-  - path config aggiornati (`INPUT_AUDIO_DIR`, `MEDIA_EXTS`);
-  - naming output con tag lingua `(lang_<codice>)`;
-  - flow CLI: scelta lingua via `package.cli_utils.ask_choice` e menu file prefissato (`[🎧]/[🎬]/[🧪]`). (408a302, c060632)
+Principi:
+- **Truth-first**: qui dentro è “fatto” solo ciò che è **committato** su Git.
 
 ---
 
-## [2.1.0] - 2025-01-13
+## Stakeholder Summary — Hardening & Repo Hygiene (Unreleased)
 
-### Added
-- Selezione lingua esplicita nel flusso CLI (`it`, `en`, `fr`, `es`).
-- Propagazione della lingua alla chiamata Whisper.
-- Naming output esteso con tag lingua `(lang_<codice>)`.
-- Logging esteso con campo lingua.
-- Nuovi test legati a lingua e gestione overwrite.
+### Overview
+Nel ciclo corrente il repository `speech-text-extraction-pipeline` è stato consolidato con interventi mirati a:
+- rendere l’esecuzione test **riproducibile** e **cwd-agnostic** (root e `src/`),
+- standardizzare la gestione di cartelle runtime (`logs/`, `output/`, `input/`) tramite placeholder versionati,
+- migliorare igiene repo (`.gitignore`) e coerenza tra naming/IO e test suite.
 
-### Fixed
-- Corretto comportamento overwrite quando l'utente nega la sovrascrittura in modalità prompt.
-- Migliorata testabilità di `select_language()` evitando chiamate `input()` non mockate nei test.
+### Obiettivi strategici
+- Eliminare regressioni legate alla working directory (casi `cd src && pytest`).
+- Rendere la pipeline più “CI/Docker-ready” (percorsi deterministici e temporanei controllati).
+- Ridurre drift tra runtime artifacts e repository (placeholder + ignore rules).
 
----
-
-## [2.0.0] - 2025-01-12
-
-### Changed
-- Refactor in package modulare (`audio`, `core`, `naming`, `logger`, `config`, `cli_utils`, `errors`, `transcriber`).
-- Migliorata separazione responsabilità e copertura test.
+### Stato attuale
+- Test suite: **green** (`49 passed`) sia da root che da `src/` con soluzione cwd-agnostic basata su `conftest.py`.
+- Logging: standardizzato su `logs/` e creazione directory spostata “on write” (evita side-effect a import-time).
+- `.gitignore`: aggiornato per ignorare runtime e tmp, mantenendo placeholder necessari (`logs/.gitkeep`, `output/**/.gitkeep`, `input/**/.gitkeep`).
 
 ---
 
-## [1.1.0]
+## Branch: [development]
 
-### Changed
-- Consolidamento progressivo della versione refactor con focus su stabilità CLI e qualità test.
-
----
-
-## [1.0.0]
-
-### Added
-- Prima versione stabile del transcriber CLI.
+### [Unreleased]
+> Scope: hardening test/logging + repo hygiene (commit-based)
 
 ---
 
-## [0.0.0]
+- **`4d25b47` — fix(pytest): force basetemp to src/tests/tmp cwd-agnostic**
+  - **Type:** FIXED
+  - **Cosa corregge:** elimina i failure in esecuzione test da sottocartelle (es. `cd src && python -m pytest`) dovuti a `--basetemp=src/tests/tmp` interpretato come path relativo a cwd.
+  - **Come:** introdotto `src/tests/conftest.py` che forza `--basetemp` a un path assoluto ancorato alla project root; mantenuto `testpaths = src/tests`.
+  - **Impatto:** test suite stabile indipendentemente dalla cwd.
+  - **Evidenze:** `python -m pytest` ✅ (root), `cd src && python -m pytest` ✅ (49 passed)
 
-### Added
-- Prototipo iniziale del transcriber monolitico.
+---
+
+- **`2d2668e` — fix(logging): use logs dir and create it on write**
+  - **Type:** FIXED
+  - **Cosa corregge:** standardizza la directory dei log su `logs/` (al posto di `log/`) e sposta `os.makedirs(LOG_DIR, exist_ok=True)` dentro la funzione di scrittura (no side-effect a import).
+  - **Impatto:** logging più pulito e prevedibile; supporto naturale a placeholder `logs/.gitkeep`.
+  - **Evidenze:** test suite ✅ (49 passed)
+
+---
+
+- **`9c79cc6` — chore(gitignore): ignore tmp and keep logs placeholder**
+  - **Type:** CHANGED
+  - **Cosa cambia:** aggiorna `.gitignore` per gestire `logs/**` ignorando i file runtime ma mantenendo `logs/.gitkeep`; conferma ignorare `tmp/` senza placeholder.
+  - **Impatto:** repository più pulito, senza log accidentali versionati.
+
+---
+
+- **`77d4aa3` — chore(logs): track logs dir via gitkeep**
+  - **Type:** ADDED
+  - **Cosa introduce:** `logs/.gitkeep` per versionare la directory `logs/` senza versionare i log reali.
+  - **Impatto:** struttura repo stabile e coerente tra macchine/CI.
+
+---
+
+- **`88ca4ae` — fix(pytest): set basetemp to src/tests/tmp**
+  - **Type:** FIXED
+  - **Nota:** intervento iniziale su `pytest.ini` che imposta `--basetemp=src/tests/tmp`; successivamente hardenizzato per cwd-agnostic con `4d25b47`.
+  - **Impatto:** controllo dei temporanei pytest “dentro repo” (untracked).
+
+---
+
+- **`c82a247` — docs(changelog): record test suite alignment to current contracts**
+  - **Type:** CHANGED
+  - **Cosa cambia:** aggiornamento documentale per registrare l’allineamento della test suite ai contratti correnti.
+  - **Impatto:** audit trail (docs).
+
+---
+
+- **`c060632` — test: align config and transcriber flows with new dirs and language prompt**
+  - **Type:** CHANGED
+  - **Cosa cambia:** riallinea test/contratti su percorsi e flussi aggiornati (directory e prompt lingua).
+  - **Impatto:** riduzione drift tra codice e suite.
+
+---
+
+- **`408a302` — test(core): expect lang tag in output filenames**
+  - **Type:** CHANGED
+  - **Cosa cambia:** i test si adeguano al naming che include il tag lingua nei file generati.
+  - **Impatto:** enforcement del contract di naming.
+
+---
+
+- **`71578d1` — chore(repo): add output/audio placeholder**
+  - **Type:** ADDED
+  - **Cosa introduce:** placeholder per mantenere la directory `output/audio/` in repo senza versionare output reali.
+  - **Impatto:** struttura output consistente.
+
+---
+
+- **`d62a384` — chore(repo): remove legacy clean_project.sh from root**
+  - **Type:** CHANGED
+  - **Cosa cambia:** rimozione dello script legacy dalla root per ridurre ambiguità e centralizzare tooling.
+  - **Impatto:** repo più ordinato.
+
+---
+
+- **`13381aa` — chore(gitignore): ignore runtime output audio/video folders**
+  - **Type:** CHANGED
+  - **Cosa cambia:** regole `.gitignore` per evitare versionamento accidentale di output runtime (audio/video).
+  - **Impatto:** igiene repo.
+
+---
+
+- **`14ea605` — chore(tools): move clean script under tools/**
+  - **Type:** CHANGED
+  - **Cosa cambia:** consolidamento dello script di clean sotto `tools/`.
+  - **Impatto:** struttura tooling più chiara.
+
+---
+
+- **`dec3330` — chore(repo): remove legacy audio placeholder**
+  - **Type:** CHANGED
+  - **Cosa cambia:** rimozione placeholder legacy non più coerente con la struttura definitiva.
+  - **Impatto:** riduzione residui.
+
+---
+
+- **`0c53a7f` — chore(repo): align gitignore and placeholders for input/output structure**
+  - **Type:** CHANGED
+  - **Cosa cambia:** riallineamento di placeholder e ignore rules per la struttura `input/` e `output/`.
+  - **Impatto:** percorso verso Docker/CI più pulito.
+
+---
+
+- **`bd2e6ab` — refactor(naming): include language in generated output filenames**
+  - **Type:** CHANGED
+  - **Cosa cambia:** naming degli output include la lingua (tag) per disambiguare e rendere tracciabile l’esecuzione.
+  - **Impatto:** output più leggibili e deterministici.
+
+---
+
+- **`b7805af` — feat(io): read media from input audio+video and write transcripts to output/transcriptions**
+  - **Type:** ADDED
+  - **Cosa introduce:** supporto IO su input audio+video e scrittura trascrizioni su `output/transcriptions/`.
+  - **Impatto:** pipeline IO coerente per batch/containers.
+
+---
+
+- **`83996b2` — refactor(lang): import ask_choice from cli_utils to avoid circular dependency**
+  - **Type:** FIXED
+  - **Cosa corregge:** evita dipendenze circolari nella gestione selezione lingua.
+  - **Impatto:** stabilità import e run.
+
+---
+
+- **`26d683a` — chore(git): keep audio dir**
+  - **Type:** ADDED
+  - **Cosa introduce:** placeholder per mantenere directory necessarie (audio) nel repo.
+  - **Impatto:** struttura stabile.
+
+---
+
+## Branch: [main]
+
+### [v2.1.0]
+- **`da2c3bc` — Merge PR #3 (release v2.1.0)**
+  - **Type:** CHANGED
+  - **Contenuto:** consolidamento baseline + requirements files e aggiornamenti documentali associati.
+
+### [v2.0.0]
+- **`fe7a49f` — Merge PR #2 (release v2.0.0)**
+  - **Type:** CHANGED
+  - **Contenuto:** evoluzione CLI + language selection, riorganizzazione e stabilizzazione.
+
+### [v1.0.0]
+- **`c8e9ee0` — Merge PR #1 (release v1.0.0)**
+  - **Type:** CHANGED
+  - **Contenuto:** milestone iniziale stabile della CLI.
+
+### [v0.0.0]
+- **`cd50726` — chore: initial import (baseline)**
+  - **Type:** ADDED
+  - **Contenuto:** snapshot iniziale della codebase.
 
 ---

@@ -14,7 +14,7 @@ Obiettivi principali:
 
 ## 2) Stile architetturale
 
-Pattern adottato: **Modular Monolith con orchestrazione CLI**.
+L'organizzazione segue layout `src/` per separare codice applicativo dalla root del repository, facilitando testing, packaging futuro e isolamento dei path runtime.
 
 Layer logici:
 1. **Presentation/Orchestration**: gestione input utente e percorso applicativo.
@@ -72,16 +72,17 @@ Layer logici:
 2. Scelta file input e parametri trascrizione.
 3. (Opzionale) taglio clip per scope parziale.
 4. Invocazione `core.transcribe()`.
-5. Salvataggio output `.txt` in cartella trascrizioni.
-6. Scrittura record benchmark in log.
+5. Salvataggio output `.txt` in `output/transcriptions/`.
+6. Scrittura record benchmark in `logs/whisper_benchmark.log`.
 7. Terminazione con riepilogo esecuzione.
 
 ## 5) Boundary tecnici
 
-- **Persistenza**: filesystem locale (nessun DB).
-- **Interfaccia**: solo CLI (nessuna API HTTP/UI web).
-- **Runtime esterno**: ffmpeg + whisper + torch.
-- **Configurazione**: centralizzata in `config.py`.
+- **Persistenza**: filesystem locale (`input/`, `output/`, `logs/`).
+- **Interfaccia**: solo CLI (nessuna API HTTP / UI web).
+- **Runtime esterno**: `ffmpeg` + `whisper` + `torch`.
+- **Configurazione**: centralizzata in `src/package/config.py`.
+- **Pulizia artefatti**: script opzionale `tools/clean_project.sh` (SAFE by default).
 
 ## 6) Invarianti funzionali da preservare
 
@@ -93,13 +94,19 @@ Layer logici:
 
 ## 7) Test strategy (stato attuale)
 
-Test in `src/tests/` coprono principalmente:
+Test localizzati in `src/tests/` e organizzati per modulo.
+
+Copertura attuale:
 - orchestrazione CLI,
 - naming,
 - utility audio,
 - logger/config,
-- comportamenti core (con monkeypatch/mock dove utile).
+- integrazione core (con monkeypatch/mock dove necessario).
+
+Caratteristiche tecniche:
+- Suite eseguibile sia da root sia da `src/` tramite `python -m pytest`.
+- Directory temporanea pytest forzata in `src/tests/tmp/` (non versionata).
+- Attualmente: **49 test passed**.
 
 Nota operativa:
-- in ambienti senza `torch`/`whisper`, alcuni test possono fallire in collection/import.
-
+- In ambienti senza `torch`/`whisper`, eventuali import runtime possono influenzare la collection.
