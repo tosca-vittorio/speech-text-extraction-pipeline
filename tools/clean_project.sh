@@ -150,10 +150,23 @@ if [[ -d "$TMP_DIR" ]]; then
       safe_rm "$p" || true
     done < <(find "$TMP_DIR" -mindepth 1 -print0 2>/dev/null || true)
   else
-    # In reale: elimina tutto sotto tmp in un colpo solo, senza rumore "Non trovato"
-    rm -rf -- "$TMP_DIR"/* "$TMP_DIR"/.[!.]* "$TMP_DIR"/..?* 2>/dev/null || true
-    # Non incrementiamo ITEMS in modo preciso qui: è "bulk delete"
-    is_true "$VERBOSE" && action "Svuotato: $TMP_DIR/**"
+    # In reale: elimina tutto sotto tmp in un colpo solo.
+    # dotglob: include hidden files; nullglob: se vuota non espande pattern letterali.
+    shopt -s dotglob nullglob
+
+    # Conta entry immediate sotto tmp (best-effort, bash-native)
+    tmp_items=( "$TMP_DIR"/* )
+    tmp_count="${#tmp_items[@]}"
+
+    # Elimina tutto (file/dir) sotto tmp
+    rm -rf -- "$TMP_DIR"/* 2>/dev/null || true
+
+    shopt -u dotglob nullglob
+
+    # Aggiorna contatore (best-effort: entry immediate sotto tmp)
+    ITEMS=$((ITEMS + tmp_count))
+
+    is_true "$VERBOSE" && action "Svuotato: $TMP_DIR/** (entries=$tmp_count)"
   fi
 else
   is_true "$VERBOSE" && log "$TMP_DIR non presente"
