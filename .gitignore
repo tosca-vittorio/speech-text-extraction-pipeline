@@ -57,7 +57,9 @@ release/
 # ============================================================
 
 log/
-logs/
+logs/**
+!logs/
+!logs/.gitkeep
 *.log
 
 # ============================================================
@@ -71,19 +73,19 @@ docs/**
 !docs/
 !docs/CHANGELOG.md
 !docs/ARCHITECTURE.md
+!docs/TIMELINE.md
 
 !docs/requirements/
 !docs/requirements/requirements.txt
 !docs/requirements/requirements-cpu.txt
 !docs/requirements/requirements-cuda.txt
-#!docs/requirements/README.md
 
 # ============================================================
 # TEMPORARY FILES
 # ============================================================
-
 tmp/
-**/tmp/
+tmp/**
+**/tmp/**
 *.tmp
 *.bak
 *.swp
