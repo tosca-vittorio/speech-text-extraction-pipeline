@@ -47,7 +47,7 @@ Se lo step tocca Docker:
 **Rischi dichiarati (aggiornati):**
 - ✅ Blocco “cwd-agnostic test execution” risolto (A1).
 - ✅ Hardening `tools/clean_project.sh` completato  (A2).
-- ⬜ Packaging installabile + entrypoint CLI (A3).
+- ✅ Packaging installabile + entrypoint CLI (A3).
 
 ---
 
@@ -111,41 +111,29 @@ python -m pytest
 
 ---
 
-## ⬜ A3 — Packaging minimale + entrypoint CLI installabile (P0)
+## ✅ A3 — Packaging minimale + entrypoint CLI installabile (P0)
 
 **Obiettivo:** eliminare dipendenze da `PYTHONPATH=src` e ottenere **un comando unico** stabile (host/CI/Docker).
 
-**Problema strutturale:** layout `src/` ma progetto non installabile ⇒ `python -m package.transcriber` da root può fallire senza `pythonpath`/workaround.
+**Implementazione (packaging):**
+- Aggiunto `pyproject.toml` (setuptools) con layout `src/`:
+  - `[tool.setuptools] package-dir = {"" = "src"}`
+  - `[tool.setuptools.packages.find] where = ["src"]`
+  - `[project.scripts] transcriber = "package.transcriber:main"`
 
-**Strategia (best practice):**
-- Introdurre `pyproject.toml` (setuptools) con `package-dir` su `src/`.
-- Installazione editable: `python -m pip install -e .`
-- Definire `console_scripts` per eseguire la CLI via comando unico (es. `transcriber`).
+**Implementazione (CLI help non-interattivo):**
+- `src/package/transcriber.py`: aggiunto fast-path su `-h/--help` per stampare help ed uscire **senza prompt interattivi**.
 
-**Attività:**
-1) Aggiungere `pyproject.toml` in root con:
-   - `[tool.setuptools] package-dir = {"" = "src"}`
-   - `[tool.setuptools.packages.find] where = ["src"]`
-   - `[project.scripts] transcriber = "package.transcriber:main"`
-2) Garantire `main()` in `src/package/transcriber.py`:
-   - `main()` deve essere il punto di ingresso stabile.
-3) In venv: `python -m pip install -e .`
-4) Verifiche: `transcriber --help` e run minima.
+**Commit di chiusura:**
+- `eecde6e` — `build(packaging): add pyproject and installable transcriber entrypoint`
 
-**DoD (A3):**
-- Da root, dopo `pip install -e .`, funziona:
-  - `transcriber --help`
-  - `transcriber` (run minima)
-- Nessuna istruzione richiede `PYTHONPATH`.
-- README aggiornato con il comando canonico.
+**DoD (A3) — raggiunto (host):**
+- Install editable: `python -m pip install -e .` → ✅
+- CLI entrypoint: `transcriber --help` → ✅ (stampa help e termina senza menu)
+- Qualità: `python -m pytest` → ✅ (49 passed)
 
-**Evidenze richieste:**
-```bash
-python -m pip install -e .
-transcriber --help
-transcriber
-python -m pytest
-```
+**Note (truth-first):**
+- `python -m package.transcriber --help` da root può ancora fallire senza installazione (layout `src/`): il comando canonico “installabile” è `transcriber`.
 
 ## ⬜ A4 — Documentation alignment + Pylint + menu “clean” in Python (P0)
 

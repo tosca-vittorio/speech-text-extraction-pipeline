@@ -25,7 +25,9 @@ Layer logici:
 ## 3) Mappa moduli e responsabilità
 
 ### `src/package/transcriber.py`
-- Entry point (`python -m package.transcriber`).
+- Entry point applicativo (`package.transcriber:main`).
+- Esposto come console script installabile `transcriber` tramite `pyproject.toml`.
+- Può essere invocato anche via `python -m package.transcriber` se il package è installato nell’ambiente corrente.
 - Orchestrazione end-to-end del flusso CLI.
 - Gestione scelte utente, validazioni di percorso e policy overwrite.
 - Invocazione servizi di trascrizione e logging finale.

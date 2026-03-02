@@ -37,6 +37,18 @@ Nel ciclo corrente il repository `speech-text-extraction-pipeline` è stato cons
 
 ---
 
+- **`eecde6e` — build(packaging): add pyproject and installable transcriber entrypoint**
+  - **Type:** CHANGED
+  - **Cosa cambia:** il progetto diventa **installabile** (layout `src/`) e introduce un entrypoint CLI stabile `transcriber`.
+  - **Dettagli:**
+    - Aggiunto `pyproject.toml` (setuptools) con `package-dir` su `src/` e package discovery `where = ["src"]`
+    - Definito `console script`: `transcriber = package.transcriber:main`
+    - `transcriber --help` ora è **non-interattivo** (fast-path `-h/--help` → stampa help e termina)
+  - **Impatto:** elimina la necessità di workaround tipo `PYTHONPATH=src`; rende la pipeline più pronta per CI/Docker.
+  - **Evidenze:** `python -m pip install -e .` ✅ · `transcriber --help` ✅ · `python -m pytest` ✅ (49 passed)
+
+---
+
 - **`e60b0ad` — chore(tools): harden clean_project script (safe-by-default)**
   - **Type:** CHANGED
   - **Cosa cambia:** riscrittura hardenizzata di `tools/clean_project.sh` con approccio SAFE-by-default.
