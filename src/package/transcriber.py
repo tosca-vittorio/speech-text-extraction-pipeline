@@ -74,6 +74,18 @@ def _should_overwrite(path: str) -> bool:
 
 # ─────────────────────────── main CLI ──────────────────────────────
 def main() -> None:
+    # Fast-path per help: evita prompt interattivi quando si invoca -h/--help
+    if any(a in ("-h", "--help") for a in sys.argv[1:]):
+        print(
+            "speech-text-extraction-pipeline (transcriber)\n\n"
+            "Uso:\n"
+            "  transcriber [--overwrite yes|no]\n\n"
+            "Opzioni:\n"
+            "  --overwrite {yes,no}   yes=sovrascrive senza chiedere; no=mai; se omesso chiede\n"
+            "  -h, --help            mostra questo help e termina\n"
+        )
+        return
+
     stampa_orario()
 
     # Menu iniziale
