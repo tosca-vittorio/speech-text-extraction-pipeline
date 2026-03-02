@@ -14,7 +14,7 @@ Obiettivi principali:
 
 ## 2) Stile architetturale
 
-L'organizzazione segue layout `src/` per separare codice applicativo dalla root del repository, facilitando testing, packaging futuro e isolamento dei path runtime.
+L'organizzazione segue layout `src/` per separare codice applicativo dalla root del repository, facilitando testing, packaging **installabile** (via `pyproject.toml`) e isolamento dei path runtime.
 
 Layer logici:
 1. **Presentation/Orchestration**: gestione input utente e percorso applicativo.
@@ -27,6 +27,8 @@ Layer logici:
 ### `src/package/transcriber.py`
 - Entry point applicativo (`package.transcriber:main`).
 - Esposto come console script installabile `transcriber` tramite `pyproject.toml`.
+- Comando canonico (post-A3): `transcriber`.
+- Supporta fast-path non-interattivo per `-h/--help` (stampa usage e termina senza prompt).
 - Può essere invocato anche via `python -m package.transcriber` se il package è installato nell’ambiente corrente.
 - Orchestrazione end-to-end del flusso CLI.
 - Gestione scelte utente, validazioni di percorso e policy overwrite.
