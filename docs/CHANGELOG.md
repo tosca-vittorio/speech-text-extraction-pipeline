@@ -35,6 +35,16 @@ Nel ciclo corrente il repository `speech-text-extraction-pipeline` è stato cons
 ### [Unreleased]
 > Scope: hardening test/logging + repo hygiene (commit-based)
 
+- **`b370f72` — docs(readme): align quick start to installable transcriber entrypoint**
+  - **Type:** CHANGED
+  - **Cosa cambia:** aggiorna il README per rendere il comando `transcriber` il comando canonico post-packaging (A3) e rimuove riferimenti obsoleti al layout “non installabile”.
+  - **Dettagli:**
+    - Quick Start aggiornato con `python -m pip install -e .`
+    - Introduzione esplicita di `transcriber --help` come verifica non-interattiva
+    - Sezione “Esecuzione” riallineata (comando canonico + fallback)
+  - **Impatto:** documentazione coerente con lo stato reale del repository e pronta per uso host/CI/Docker.
+  - **Evidenze:** `transcriber --help` ✅ · `python -m pytest` ✅ (49 passed)
+
 ---
 
 - **`eecde6e` — build(packaging): add pyproject and installable transcriber entrypoint**
