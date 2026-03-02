@@ -135,7 +135,7 @@ python -m pytest
 **Note (truth-first):**
 - `python -m package.transcriber --help` da root può ancora fallire senza installazione (layout `src/`): il comando canonico “installabile” è `transcriber`.
 
-## ⬜ A4 — Documentation alignment + Pylint + menu “clean” in Python (P0)
+## 🟡 A4 — Documentation alignment + Pylint + menu “clean” in Python (P0)
 
 ### ✅ A4.1 — README + ARCHITECTURE: allineamento comandi e flusso (truth-first)
 
@@ -146,9 +146,15 @@ python -m pytest
 - `tools/clean_project.sh` documentato con esempi `DRY_RUN/VERBOSE` + opt-in.
 - `docs/ARCHITECTURE.md` aggiornata su confini moduli e flusso attuale.
 
-**Evidenze:**
+**Evidenze (host):**
 ```bash
+# entrypoint canonico
+transcriber --help
+
+# qualità repo invariata
 python -m pytest
+
+# clean script (doc examples)
 DRY_RUN=true VERBOSE=true tools/clean_project.sh | head -n 120
 ```
 
