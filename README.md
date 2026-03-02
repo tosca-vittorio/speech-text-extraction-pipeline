@@ -13,11 +13,20 @@ python -m venv .venv
 .venv\Scripts\activate   # Windows
 # source .venv/bin/activate  # Linux / macOS
 
-pip install -r docs/requirements/requirements.txt
-python -m package.transcriber
+python -m pip install --upgrade pip
+
+# Installazione "editable" (post-A3): abilita l'entrypoint CLI `transcriber`
+python -m pip install -e .
+
+# Verifica rapida: help non interattivo
+transcriber --help
+
+# Avvio modalità interattiva
+transcriber
 ```
 
 > Nota: se vuoi un setup CPU-only o CUDA, usa i file in `docs/requirements/`.
+> In alternativa, installa prima i requirements e poi esegui `python -m pip install -e .`.
 
 ---
 
@@ -111,21 +120,28 @@ pip install -r docs/requirements/requirements-cuda.txt
 
 ### Modalità interattiva (attuale)
 
-Da root repository:
+Da root repository (comando canonico):
+
+```bash
+transcriber
+```
+
+Fallback (modulo Python, se preferisci):
 
 ```bash
 python -m package.transcriber
 ```
 
-Oppure da `src/`:
+Da `src/` (solo per debug locale):
 
 ```bash
 cd src
 python -m package.transcriber
 ```
 
-> Nota: attualmente il progetto utilizza layout `src/` non installabile.
-> In una futura milestone (A3) verrà introdotto `pyproject.toml` con installazione editable.
+> Nota (post-A3): il progetto usa layout `src/` **installabile** via `pyproject.toml`.
+> Il comando canonico raccomandato è `transcriber` (console script).
+> `python -m package.transcriber` è supportato **se** il package è installato nell’ambiente corrente.
 
 ---
 
@@ -308,7 +324,6 @@ Questo garantisce tracciabilità completa.
 
 Prossime milestone:
 
-- Packaging installabile (`pyproject.toml`)
 - Docker CPU baseline
 - Modalità batch non interattiva
 - Smoke test E2E
