@@ -8,6 +8,7 @@ supporto al flusso interattivo del transcriber.
 """
 
 import platform
+import subprocess
 from datetime import datetime
 from package.errors import InvalidChoiceError
 
@@ -18,7 +19,6 @@ def get_csproduct_name() -> str:
     if platform.system().lower() != "windows":
         return platform.node()
     try:
-        import subprocess
         result = subprocess.run(
             ["wmic", "csproduct", "get", "name"],
             capture_output=True, text=True, check=True
