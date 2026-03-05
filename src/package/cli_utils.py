@@ -25,7 +25,7 @@ def get_csproduct_name() -> str:
         )
         lines = [l.strip() for l in result.stdout.splitlines() if l.strip()]
         return lines[1] if len(lines) >= 2 else platform.node()
-    except Exception:
+    except (FileNotFoundError, OSError, subprocess.CalledProcessError, ValueError):
         return platform.node()
 
 def stampa_orario() -> None:

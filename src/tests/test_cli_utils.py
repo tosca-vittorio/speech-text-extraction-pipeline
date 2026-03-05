@@ -48,13 +48,16 @@ def test_get_csproduct_name_windows_no_value(monkeypatch):
 def test_get_csproduct_name_windows_error(monkeypatch):
     monkeypatch.setattr(cli_utils.platform, "system", lambda: "Windows")
     monkeypatch.setattr(cli_utils.platform, "node", lambda: "fallback-host")
-    # subprocess.run solleva
+
     def boom(*args, **kw):
-        raise RuntimeError("oops")
+        raise subprocess.CalledProcessError(
+            returncode=1,
+            cmd=["wmic", "csproduct", "get", "name"],
+        )
+
     monkeypatch.setattr(subprocess, "run", boom)
 
     assert cli_utils.get_csproduct_name() == "fallback-host"
-
 
 def test_stampa_orario_format(capsys, monkeypatch):
     # Fissa datetime.now() a un valore noto
