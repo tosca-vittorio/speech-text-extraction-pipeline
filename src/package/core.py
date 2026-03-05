@@ -6,8 +6,9 @@ calcola le metriche di performance e genera il nome del file di output.
 """
 
 import os
-import whisper
 import time
+
+import whisper
 
 from package.audio import get_audio_duration
 from package.naming import genera_nome_file_output
