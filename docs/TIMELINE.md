@@ -158,20 +158,70 @@ python -m pytest
 DRY_RUN=true VERBOSE=true tools/clean_project.sh | head -n 120
 ```
 
-### ⬜ A4.2 — Introdurre Pylint come quality gate (evidenza extra)
 
-**Obiettivo:** static analysis riproducibile come qualità aggiuntiva allo snapshot.
+### 🟡 A4.2 — Pylint quality gate (baseline + burn-down verso 10/10)
 
-**Scelte:**
+**Obiettivo:** introdurre static analysis **riproducibile** e **auditabile** come quality gate aggiuntivo (prima “soft”, poi “hard” quando il codice è allineato).
 
-* Config unica: `.pylintrc` oppure `pyproject.toml` (una sola fonte).
-* Target iniziale: `src/package` (scope ridotto).
+**Decisione (truth-first):** allo stato attuale il run “hard” fallisce (exit code non-zero), quindi adottiamo **gate soft** (`--exit-zero`) per non bloccare lo sviluppo, mentre facciamo burn-down incrementale verso **10/10**.
 
-**DoD / Evidenze:**
+#### Macro-area: Lint Hardening (subtask)
+
+##### ✅ A4.2.1 — Installazione Pylint (host)
+**Evidenza:**
+```bash
+python -m pip install -U pylint
+python -m pylint --version
+# pylint 4.0.5 (host)
+```
+
+##### ✅ A4.2.2 — Baseline lint (hard run) su `src/package`
+
+**Evidenza:**
 
 ```bash
 python -m pylint src/package
+echo $?   # osservato: 28 (hard fail)
 ```
+
+**Nota:** rating corrente osservato: **8.74/10**.
+
+##### ✅ A4.2.3 — Gate “soft” (non bloccante) su `src/package`
+
+**Evidenza:**
+
+```bash
+python -m pylint --exit-zero src/package
+echo $?   # osservato: 0
+```
+
+##### ⬜ A4.2.4 — Standardizzare “comando canonico” di lint (repo-level)
+
+**Scopo:** avere 1 comando stabile e documentato (es. `python -m pylint --exit-zero src/package`) come gate aggiuntivo.
+
+##### ⬜ A4.2.5 — Definire config unica (UNA sola fonte)
+
+**Scelte (da chiudere):**
+
+* `.pylintrc` **oppure** `pyproject.toml` (no duplicazioni)
+* target iniziale: `src/package` (scope ridotto, burn-down controllabile)
+
+##### ⬜ A4.2.6 — Burn-down chirurgico verso 10/10 (incrementale)
+
+**Regole:**
+
+* 1 warning alla volta, commit atomico.
+* Prima: fix “cheap wins” (newline, trailing newline, line-too-long locali, import order).
+* Poi: warning strutturali (broad-exception, raise-from, subprocess.run check).
+* Infine: refactor controllati (too-many-branches/locals/statements) **solo** se motivato e con test invariati.
+
+**DoD finale A4.2 (per passare a ✅):**
+
+* Gate soft documentato come comando canonico.
+* Config unica scelta e applicata (se necessaria).
+* Target iniziale raggiunge **10/10** (o policy esplicita di rating minimo) con evidenze registrate.
+
+---
 
 ### ⬜ A4.3 — Avviare “pulizia” dal programma Python (menu/command)
 
