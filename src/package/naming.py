@@ -57,9 +57,12 @@ def genera_nome_file_output(
         if not inizio or not fine:
             raise ConfigError("Per tipo='parziale' servono timestamp inizio/fine")
         # Converte "hh:mm:ss" in "hhmmss" (ma senza le ore se sono "00")
-        fmt = lambda ts: "".join(f"{int(p):02}" for p in ts.split(":")[1:])
+        def fmt(ts: str) -> str:
+            return "".join(f"{int(part):02}" for part in ts.split(":")[1:])
+
         start, end = fmt(inizio), fmt(fine)
         name_core = f"{base_name} ({start}_{end}) ({mod_blocco})"
+
     else:
         # completa
         name_core = f"{base_name} ({mod_blocco})"
