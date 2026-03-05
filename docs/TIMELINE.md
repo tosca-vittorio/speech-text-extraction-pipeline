@@ -208,6 +208,26 @@ echo $?   # osservato: 0
 
 ##### ⬜ A4.2.6 — Burn-down chirurgico verso 10/10 (incrementale)
 
+###### ✅ A4.2.6.a — Add module docstrings (batch su moduli base)
+**Scopo:** eliminare `missing-module-docstring` in modo massivo ma conservativo.
+
+**File toccati:**
+- `src/package/audio.py`
+- `src/package/cli_utils.py`
+- `src/package/config.py`
+- `src/package/errors.py`
+- `src/package/lang_utils.py`
+- `src/package/logger.py`
+
+**Evidenze:**
+```bash
+python -m pytest
+# -> 49 passed
+
+python -m pylint src/package
+# -> rating osservato ~9.22/10 (hard exit code resta non-zero)
+```
+
 **Regole:**
 
 * 1 warning alla volta, commit atomico.
@@ -220,6 +240,20 @@ echo $?   # osservato: 0
 * Gate soft documentato come comando canonico.
 * Config unica scelta e applicata (se necessaria).
 * Target iniziale raggiunge **10/10** (o policy esplicita di rating minimo) con evidenze registrate.
+
+###### ✅ A4.2.6.b — Hardening `get_audio_duration`: fallback "N/A" su WAV invalidi e failure ffprobe
+**Contesto:** i test usano WAV “stub” (header incompleto) e possono generare `EOFError`/`wave.Error`. Inoltre, `ffprobe` può fallire/sollevare eccezioni (anche se `check=False`).
+
+**Decisione:** la funzione deve essere **safe** e restituire `"N/A"` su errori gestibili, senza propagare eccezioni.
+
+**Evidenze:**
+```bash
+python -m pytest
+# -> 49 passed
+
+python -m pylint src/package
+# -> rating osservato ~9.30/10 (hard exit code osservato: 28)
+```
 
 ---
 
