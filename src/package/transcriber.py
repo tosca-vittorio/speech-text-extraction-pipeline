@@ -1,7 +1,12 @@
+# src/package/transcriber.py
+
 """
 Entry-point CLI per la trascrizione automatica con Whisper.
-Esegui:  python -m package.transcriber [--overwrite yes|no]
+
+Comando canonico (installabile):
+- transcriber --help
 """
+
 from __future__ import annotations
 
 import argparse
@@ -74,6 +79,13 @@ def _should_overwrite(path: str) -> bool:
 
 # ─────────────────────────── main CLI ──────────────────────────────
 def main() -> None:
+    """
+    Entry point della CLI interattiva.
+
+    Gestisce la selezione dei parametri (input, modello, device, lingua, modalità/scope),
+    invoca la trascrizione e salva output e log in modo riproducibile.
+    """
+
     # Fast-path per help: evita prompt interattivi quando si invoca -h/--help
     if any(a in ("-h", "--help") for a in sys.argv[1:]):
         print(
