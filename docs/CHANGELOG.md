@@ -1,203 +1,318 @@
-# CHANGELOG — `speech-text-extraction-pipeline` (Python · Whisper CLI)
-
-> Type legend:
-> **ADDED** = introduzione di elementi nuovi (scaffold/moduli/feature),
-> **CHANGED** = modifica/refactor/docs/hardening,
-> **FIXED** = correzione puntuale (bug/regressione/typo).
-
-Principi:
-- **Truth-first**: qui dentro è “fatto” solo ciò che è **committato** su Git.
-
----
-
-## Stakeholder Summary — Hardening & Repo Hygiene (Unreleased)
-
-### Overview
-Nel ciclo corrente il repository `speech-text-extraction-pipeline` è stato consolidato con interventi mirati a:
-- rendere l’esecuzione test **riproducibile** e **cwd-agnostic** (root e `src/`),
-- standardizzare la gestione di cartelle runtime (`logs/`, `output/`, `input/`) tramite placeholder versionati,
-- migliorare igiene repo (`.gitignore`) e coerenza tra naming/IO e test suite.
-
-### Obiettivi strategici
-- Eliminare regressioni legate alla working directory (casi `cd src && pytest`).
-- Rendere la pipeline più “CI/Docker-ready” (percorsi deterministici e temporanei controllati).
-- Ridurre drift tra runtime artifacts e repository (placeholder + ignore rules).
-
-### Stato attuale
-- Test suite: **green** (`49 passed`) sia da root che da `src/` con soluzione cwd-agnostic basata su `conftest.py`.
-- Logging: standardizzato su `logs/` e creazione directory spostata “on write” (evita side-effect a import-time).
-- `.gitignore`: aggiornato per ignorare runtime e tmp, mantenendo placeholder necessari (`logs/.gitkeep`, `output/**/.gitkeep`, `input/**/.gitkeep`).
-
----
-
 ## Branch: [development]
 
 ### [Unreleased]
-> Scope: hardening test/logging + repo hygiene (commit-based)
+> Scope corrente: A4.2 (Pylint burn-down incrementale con commit atomici, pytest sempre verde, evidenze registrate in TIMELINE)
 
-- **`b370f72` — docs(readme): align quick start to installable transcriber entrypoint**
+#### A4.2 — Pylint burn-down (cheap wins + hardening) [ordine git log: più recente → più vecchio]
+
+##### Docs (tracking / stato finale del blocco)
+- **`22613bf` — docs(timeline): record A4.2 lint burn-down cheap wins**
   - **Type:** CHANGED
-  - **Cosa cambia:** aggiorna il README per rendere il comando `transcriber` il comando canonico post-packaging (A3) e rimuove riferimenti obsoleti al layout “non installabile”.
-  - **Dettagli:**
-    - Quick Start aggiornato con `python -m pip install -e .`
-    - Introduzione esplicita di `transcriber --help` come verifica non-interattiva
-    - Sezione “Esecuzione” riallineata (comando canonico + fallback)
-  - **Impatto:** documentazione coerente con lo stato reale del repository e pronta per uso host/CI/Docker.
-  - **Evidenze:** `transcriber --help` ✅ · `python -m pytest` ✅ (49 passed)
+  - **Cosa cambia:** aggiornata `docs/TIMELINE.md` con subtask `A4.2.6.c` → `A4.2.6.g` e relative evidenze.
+  - **Impatto:** formalizzazione del completamento cheap wins; warning residui solo strutturali (`too-many-*`).
 
----
-
-- **`eecde6e` — build(packaging): add pyproject and installable transcriber entrypoint**
+##### Chore / Lint (seconda ondata cheap wins + test alignment)
+- **`0a53f8f` — chore(lint): annotate intentional broad catch in cli entrypoint**
   - **Type:** CHANGED
-  - **Cosa cambia:** il progetto diventa **installabile** (layout `src/`) e introduce un entrypoint CLI stabile `transcriber`.
+  - **Cosa cambia:** annotato il `catch-all` finale nel wrapper CLI (`if __name__ == "__main__":`) con disable mirato Pylint.
   - **Dettagli:**
-    - Aggiunto `pyproject.toml` (setuptools) con `package-dir` su `src/` e package discovery `where = ["src"]`
-    - Definito `console script`: `transcriber = package.transcriber:main`
-    - `transcriber --help` ora è **non-interattivo** (fast-path `-h/--help` → stampa help e termina)
-  - **Impatto:** elimina la necessità di workaround tipo `PYTHONPATH=src`; rende la pipeline più pronta per CI/Docker.
-  - **Evidenze:** `python -m pip install -e .` ✅ · `transcriber --help` ✅ · `python -m pytest` ✅ (49 passed)
+    - broad catch **intenzionale** per stampare un errore utente leggibile in entrypoint;
+    - nessuna soppressione globale delle regole lint.
+  - **Impatto:** rimosso warning `W0718` residuo nel wrapper CLI.
+  - **Evidenze:** `python -m pytest` ✅ (49 passed), `python -m pylint src/package` → rating **9.63/10**.
 
----
-
-- **`e60b0ad` — chore(tools): harden clean_project script (safe-by-default)**
+- **`ceefa41` — chore(lint): replace local lambda with helper in naming**
   - **Type:** CHANGED
-  - **Cosa cambia:** riscrittura hardenizzata di `tools/clean_project.sh` con approccio SAFE-by-default.
-  - **Dettagli:**
-    - Allowlist mirata (root cache + `src/` + `tools/` + `src/tests/tmp/**`)
-    - Opt-in espliciti (OFF di default): `PURGE_LOGS`, `PURGE_OUTPUT`, `CLEAN_VENV`
-    - Root guard (`README.md` + `src/` + `tools/`) per prevenire esecuzioni fuori repository
-    - Output strutturato (sezioni + contatori) e modalità `DRY_RUN` / `VERBOSE`
-  - **Impatto:** pulizia deterministica, auditabile e CI/Docker-ready senza rischio di cancellazioni accidentali.
-  - **Evidenze:** `DRY_RUN=true VERBOSE=true tools/clean_project.sh` ✅ · `python -m pytest` ✅ (49 passed)
+  - **Cosa cambia:** sostituita lambda locale in `naming.py` con helper `def`.
+  - **Impatto:** rimozione `C3001 unnecessary-lambda-assignment` senza cambiare comportamento.
+  - **Evidenze:** `python -m pytest` ✅ (49 passed), Pylint rating **9.59/10**.
 
----
+- **`12f30f8` — chore(lint): rename local languages mapping in lang utils**
+  - **Type:** CHANGED
+  - **Cosa cambia:** rinominata variabile locale `LANGUAGES` → `languages` in `lang_utils.py`.
+  - **Impatto:** rimozione `C0103 invalid-name` senza cambiare API/contratto.
+  - **Evidenze:** `python -m pytest` ✅ (49 passed), Pylint rating **9.56/10**.
 
-- **`4d25b47` — fix(pytest): force basetemp to src/tests/tmp cwd-agnostic**
+- **`70d7977` — test(lang): align monkeypatch targets with toplevel ask_choice import**
+  - **Type:** CHANGED
+  - **Cosa cambia:** allineati i test al nuovo binding dell’import `ask_choice` in `lang_utils` (import toplevel):
+    - patch del simbolo realmente usato (`package.lang_utils.ask_choice`);
+    - nei test end-to-end del transcriber, patch in parallelo di `trans_mod.ask_choice` e `lang_mod.ask_choice` con la stessa sequenza.
+  - **Impatto:** risolti failure da `pytest: reading from stdin` / `StopIteration` emersi dopo il refactor lint-driven.
+  - **Evidenze:** `python -m pytest` ✅ (49 passed).
+
+- **`b51b701` — chore(lint): narrow exceptions in csproduct lookup**
+  - **Type:** CHANGED
+  - **Cosa cambia:** in `cli_utils.get_csproduct_name()` sostituito `except Exception` con catch specifici:
+    - `FileNotFoundError`, `OSError`
+    - `subprocess.CalledProcessError`
+    - `ValueError`
+  - **Impatto:** rimozione `W0718` locale mantenendo il fallback su `platform.node()`.
+  - **Evidenze:** `python -m pytest` ✅ (49 passed), Pylint rating ~**9.48/10**.
+
+- **`8d4f2e7` — chore(lint): add transcriber module and main docstrings**
+  - **Type:** CHANGED
+  - **Cosa cambia:** aggiunti header/module docstring canonico in `transcriber.py` e docstring a `main()`.
+  - **Impatto:** migliore leggibilità/documentazione del punto d’ingresso CLI installabile.
+
+- **`26bc282` — chore(lint): move subprocess import to toplevel in cli utils**
+  - **Type:** CHANGED
+  - **Cosa cambia:** spostato `import subprocess` a livello top-level in `cli_utils.py`.
+  - **Impatto:** allineamento a best practice/import hygiene e regole lint.
+
+- **`871a002` — chore(lint): add exception chaining in transcriber errors**
+  - **Type:** CHANGED
+  - **Cosa cambia:** aggiunta exception chaining (`raise ... from exc`) nei percorsi di errore del transcriber.
+  - **Impatto:** migliorata tracciabilità della causa originale senza cambiare il flusso utente CLI.
+
+##### Docs + Fix (checkpoint intermedio A4.2)
+- **`0728d73` — docs(timeline): record A4.2 burn-down progress and audio duration hardening**
+  - **Type:** CHANGED
+  - **Cosa cambia:** aggiorna `docs/TIMELINE.md` con avanzamento A4.2, evidenze intermedie e hardening `get_audio_duration()`.
+  - **Impatto:** audit trail coerente del burn-down.
+
+- **`0e06f64` — fix(audio): return N/A on invalid wav and ffprobe failures**
   - **Type:** FIXED
-  - **Cosa corregge:** elimina i failure in esecuzione test da sottocartelle (es. `cd src && python -m pytest`) dovuti a `--basetemp=src/tests/tmp` interpretato come path relativo a cwd.
-  - **Come:** introdotto `src/tests/conftest.py` che forza `--basetemp` a un path assoluto ancorato alla project root; mantenuto `testpaths = src/tests`.
-  - **Impatto:** test suite stabile indipendentemente dalla cwd.
-  - **Evidenze:** `python -m pytest` ✅ (root), `cd src && python -m pytest` ✅ (49 passed)
+  - **Cosa corregge:** hardening di `get_audio_duration()` su input WAV invalidi / fallback ffprobe.
+  - **Dettagli:**
+    - gestisce WAV “stub/invalidi” (es. `EOFError`, `wave.Error`) senza propagare eccezioni;
+    - gestisce failure `ffprobe` restituendo `"N/A"`;
+    - evita crash su input corrotti / failure di tool esterni.
+  - **Impatto:** pipeline più robusta su casi reali/di test.
+  - **Evidenze:** `python -m pytest` ✅ (49 passed).
 
----
-
-- **`2d2668e` — fix(logging): use logs dir and create it on write**
-  - **Type:** FIXED
-  - **Cosa corregge:** standardizza la directory dei log su `logs/` (al posto di `log/`) e sposta `os.makedirs(LOG_DIR, exist_ok=True)` dentro la funzione di scrittura (no side-effect a import).
-  - **Impatto:** logging più pulito e prevedibile; supporto naturale a placeholder `logs/.gitkeep`.
-  - **Evidenze:** test suite ✅ (49 passed)
-
----
-
-- **`9c79cc6` — chore(gitignore): ignore tmp and keep logs placeholder**
+- **`7e6ed0a` — chore(lint): add missing module docstrings**
   - **Type:** CHANGED
-  - **Cosa cambia:** aggiorna `.gitignore` per gestire `logs/**` ignorando i file runtime ma mantenendo `logs/.gitkeep`; conferma ignorare `tmp/` senza placeholder.
-  - **Impatto:** repository più pulito, senza log accidentali versionati.
+  - **Cosa cambia:** aggiunte module docstring ai moduli base:
+    - `src/package/audio.py`
+    - `src/package/cli_utils.py`
+    - `src/package/config.py`
+    - `src/package/errors.py`
+    - `src/package/lang_utils.py`
+    - `src/package/logger.py`
+  - **Impatto:** rimozione warning `missing-module-docstring`.
+  - **Evidenze:** `python -m pytest` ✅ (49 passed). Pylint rating in crescita (~9.2+).
 
----
+##### Chore / Lint (cheap wins iniziali)
+- **`bb686ed` — chore(lint): wrap config MODALITA_OPTIONS into multiline list**
+  - **Type:** CHANGED
+  - **Cosa cambia:** spezzata `MODALITA_OPTIONS` in lista multiline in `config.py`.
+  - **Impatto:** conformità lint su linee lunghe.
 
-- **`77d4aa3` — chore(logs): track logs dir via gitkeep**
+- **`dfb3cdf` — chore(lint): split long clip path construction in transcriber**
+  - **Type:** CHANGED
+  - **Cosa cambia:** spezzata la costruzione del path clip in `transcriber.py` (variabile intermedia).
+  - **Impatto:** migliore leggibilità e riduzione warning `line-too-long`.
+
+- **`3038fcd` — chore(lint): wrap long logger docstring line**
+  - **Type:** CHANGED
+  - **Cosa cambia:** wrapping di una riga lunga nel docstring di `log_transcription()`.
+  - **Impatto:** conformità `line-too-long`.
+
+- **`347e275` — chore(lint): reorder imports in core to satisfy pylint**
+  - **Type:** CHANGED
+  - **Cosa cambia:** riordino import in `core.py` per rispettare le regole pylint (separazione stdlib / local imports).
+  - **Impatto:** riduzione warning lint senza impatto funzionale.
+
+- **`a6d4989` — chore(lint): split long ternary in audio duration parsing**
+  - **Type:** CHANGED
+  - **Cosa cambia:** refactor di una ternaria troppo lunga in `audio.py` (parsing `stdout`) in blocco multiline.
+  - **Impatto:** migliore leggibilità e conformità `line-too-long`.
+
+- **`a4932f3` — chore(lint): normalize trailing newlines in config**
+  - **Type:** CHANGED
+  - **Cosa cambia:** normalizzazione newline finali / trailing newline in `config.py`.
+  - **Impatto:** riduzione warning stilistici e maggiore coerenza file.
+
+- **`11b0bfd` — chore(lint): add missing final newline in package init**
+  - **Type:** CHANGED
+  - **Cosa cambia:** aggiunta newline finale mancante in `src/package/__init__.py`.
+  - **Impatto:** allineamento a regole stile/lint di base.
+
+##### Docs (setup / tracking iniziale del burn-down)
+- **`4110064` — docs(timeline): expand A4.2 pylint gate into macro-subtasks and record evidences**
+  - **Type:** CHANGED
+  - **Cosa cambia:** espande `docs/TIMELINE.md` con macro-subtask A4.2, regole burn-down e formato evidenze.
+  - **Impatto:** tracking più rigoroso e auditabile del quality gate lint.
+
+##### Quality gates (evidenze consolidate per il blocco A4.2)
+- Test suite: `python -m pytest` → **49 passed** (stabile in tutte le iterazioni rilevanti).
+- Pylint hard-run: `python -m pylint src/package` → rating incrementale fino a **9.63 / 10**.
+- Hard-run Pylint ancora **non-zero** (ultimo exit code osservato: **8**), con warning residui **solo strutturali**:
+  - `too-many-arguments`
+  - `too-many-positional-arguments`
+  - `too-many-locals`
+  - `too-many-branches`
+  - `too-many-statements`
+
+#### Historical context (pre-A4.2 / hardening, packaging, repo hygiene) [ordine cronologico]
+
+##### Foundation / IO / naming / repo layout
+- **`26d683a` — chore(git): keep audio dir**
   - **Type:** ADDED
-  - **Cosa introduce:** `logs/.gitkeep` per versionare la directory `logs/` senza versionare i log reali.
-  - **Impatto:** struttura repo stabile e coerente tra macchine/CI.
+  - **Cosa introduce:** placeholder per mantenere directory necessarie (audio) nel repo.
+  - **Impatto:** struttura stabile.
 
----
-
-- **`88ca4ae` — fix(pytest): set basetemp to src/tests/tmp**
-  - **Type:** FIXED
-  - **Nota:** intervento iniziale su `pytest.ini` che imposta `--basetemp=src/tests/tmp`; successivamente hardenizzato per cwd-agnostic con `4d25b47`.
-  - **Impatto:** controllo dei temporanei pytest “dentro repo” (untracked).
-
----
-
-- **`c82a247` — docs(changelog): record test suite alignment to current contracts**
+- **`83996b2` — refactor(lang): import ask_choice from cli_utils to avoid circular dependency**
   - **Type:** CHANGED
-  - **Cosa cambia:** aggiornamento documentale per registrare l’allineamento della test suite ai contratti correnti.
-  - **Impatto:** audit trail (docs).
-
----
-
-- **`c060632` — test: align config and transcriber flows with new dirs and language prompt**
-  - **Type:** CHANGED
-  - **Cosa cambia:** riallinea test/contratti su percorsi e flussi aggiornati (directory e prompt lingua).
-  - **Impatto:** riduzione drift tra codice e suite.
-
----
-
-- **`408a302` — test(core): expect lang tag in output filenames**
-  - **Type:** CHANGED
-  - **Cosa cambia:** i test si adeguano al naming che include il tag lingua nei file generati.
-  - **Impatto:** enforcement del contract di naming.
-
----
-
-- **`71578d1` — chore(repo): add output/audio placeholder**
-  - **Type:** ADDED
-  - **Cosa introduce:** placeholder per mantenere la directory `output/audio/` in repo senza versionare output reali.
-  - **Impatto:** struttura output consistente.
-
----
-
-- **`d62a384` — chore(repo): remove legacy clean_project.sh from root**
-  - **Type:** CHANGED
-  - **Cosa cambia:** rimozione dello script legacy dalla root per ridurre ambiguità e centralizzare tooling.
-  - **Impatto:** repo più ordinato.
-
----
-
-- **`13381aa` — chore(gitignore): ignore runtime output audio/video folders**
-  - **Type:** CHANGED
-  - **Cosa cambia:** regole `.gitignore` per evitare versionamento accidentale di output runtime (audio/video).
-  - **Impatto:** igiene repo.
-
----
-
-- **`14ea605` — chore(tools): move clean script under tools/**
-  - **Type:** CHANGED
-  - **Cosa cambia:** consolidamento dello script di clean sotto `tools/`.
-  - **Impatto:** struttura tooling più chiara.
-
----
-
-- **`dec3330` — chore(repo): remove legacy audio placeholder**
-  - **Type:** CHANGED
-  - **Cosa cambia:** rimozione placeholder legacy non più coerente con la struttura definitiva.
-  - **Impatto:** riduzione residui.
-
----
-
-- **`0c53a7f` — chore(repo): align gitignore and placeholders for input/output structure**
-  - **Type:** CHANGED
-  - **Cosa cambia:** riallineamento di placeholder e ignore rules per la struttura `input/` e `output/`.
-  - **Impatto:** percorso verso Docker/CI più pulito.
-
----
-
-- **`bd2e6ab` — refactor(naming): include language in generated output filenames**
-  - **Type:** CHANGED
-  - **Cosa cambia:** naming degli output include la lingua (tag) per disambiguare e rendere tracciabile l’esecuzione.
-  - **Impatto:** output più leggibili e deterministici.
-
----
+  - **Cosa cambia:** refactor della gestione lingua per importare `ask_choice` da `cli_utils` ed evitare dipendenze circolari.
+  - **Impatto:** stabilità import e run.
 
 - **`b7805af` — feat(io): read media from input audio+video and write transcripts to output/transcriptions**
   - **Type:** ADDED
   - **Cosa introduce:** supporto IO su input audio+video e scrittura trascrizioni su `output/transcriptions/`.
   - **Impatto:** pipeline IO coerente per batch/containers.
 
----
+- **`bd2e6ab` — refactor(naming): include language in generated output filenames**
+  - **Type:** CHANGED
+  - **Cosa cambia:** naming degli output include il tag lingua per disambiguare e tracciare l’esecuzione.
+  - **Impatto:** output più leggibili e deterministici.
 
-- **`83996b2` — refactor(lang): import ask_choice from cli_utils to avoid circular dependency**
-  - **Type:** FIXED
-  - **Cosa corregge:** evita dipendenze circolari nella gestione selezione lingua.
-  - **Impatto:** stabilità import e run.
+- **`0c53a7f` — chore(repo): align gitignore and placeholders for input/output structure**
+  - **Type:** CHANGED
+  - **Cosa cambia:** riallineamento placeholder e ignore rules per la struttura `input/` / `output/`.
+  - **Impatto:** repo hygiene e base più pulita per Docker/CI.
 
----
+- **`dec3330` — chore(repo): remove legacy audio placeholder**
+  - **Type:** CHANGED
+  - **Cosa cambia:** rimozione placeholder legacy non più coerente con la struttura definitiva.
+  - **Impatto:** riduzione residui e ambiguità.
 
-- **`26d683a` — chore(git): keep audio dir**
+- **`14ea605` — chore(tools): move clean script under tools/**
+  - **Type:** CHANGED
+  - **Cosa cambia:** consolidamento dello script di clean sotto `tools/`.
+  - **Impatto:** struttura tooling più chiara.
+
+- **`13381aa` — chore(gitignore): ignore runtime output audio/video folders**
+  - **Type:** CHANGED
+  - **Cosa cambia:** regole `.gitignore` per evitare versionamento accidentale di output runtime (audio/video).
+  - **Impatto:** igiene repo.
+
+- **`d62a384` — chore(repo): remove legacy clean_project.sh from root**
+  - **Type:** CHANGED
+  - **Cosa cambia:** rimozione dello script legacy dalla root per ridurre ambiguità e centralizzare tooling.
+  - **Impatto:** repo più ordinato.
+
+- **`71578d1` — chore(repo): add output/audio placeholder**
   - **Type:** ADDED
-  - **Cosa introduce:** placeholder per mantenere directory necessarie (audio) nel repo.
-  - **Impatto:** struttura stabile.
+  - **Cosa introduce:** placeholder per mantenere `output/audio/` in repo senza versionare output reali.
+  - **Impatto:** struttura output consistente.
+
+##### Test alignment / pytest temp handling / logs hygiene
+- **`408a302` — test(core): expect lang tag in output filenames**
+  - **Type:** CHANGED
+  - **Cosa cambia:** i test si adeguano al naming che include il tag lingua nei file generati.
+  - **Impatto:** enforcement del contract di naming.
+
+- **`c060632` — test: align config and transcriber flows with new dirs and language prompt**
+  - **Type:** CHANGED
+  - **Cosa cambia:** riallinea test/contratti su percorsi e flussi aggiornati (directory e prompt lingua).
+  - **Impatto:** riduzione drift tra codice e suite.
+
+- **`c82a247` — docs(changelog): record test suite alignment to current contracts**
+  - **Type:** CHANGED
+  - **Cosa cambia:** aggiornamento documentale per registrare l’allineamento della test suite ai contratti correnti.
+  - **Impatto:** audit trail (docs).
+
+- **`88ca4ae` — fix(pytest): set basetemp to src/tests/tmp**
+  - **Type:** FIXED
+  - **Nota:** intervento iniziale su `pytest.ini` che imposta `--basetemp=src/tests/tmp`; successivamente hardenizzato per cwd-agnostic con `4d25b47`.
+  - **Impatto:** controllo dei temporanei pytest “dentro repo” (untracked).
+
+- **`77d4aa3` — chore(logs): track logs dir via gitkeep**
+  - **Type:** ADDED
+  - **Cosa introduce:** `logs/.gitkeep` per versionare la directory `logs/` senza versionare i log reali.
+  - **Impatto:** struttura repo stabile e coerente tra macchine/CI.
+
+- **`9c79cc6` — chore(gitignore): ignore tmp and keep logs placeholder**
+  - **Type:** CHANGED
+  - **Cosa cambia:** aggiorna `.gitignore` per gestire `logs/**` ignorando i file runtime ma mantenendo `logs/.gitkeep`; conferma ignorare `tmp/` senza placeholder.
+  - **Impatto:** repository più pulito, senza log accidentali versionati.
+
+- **`2d2668e` — fix(logging): use logs dir and create it on write**
+  - **Type:** FIXED
+  - **Cosa corregge:** standardizza la directory dei log su `logs/` (al posto di `log/`) e sposta `os.makedirs(LOG_DIR, exist_ok=True)` dentro la funzione di scrittura (no side-effect a import).
+  - **Impatto:** logging più pulito e prevedibile; supporto naturale a placeholder `logs/.gitkeep`.
+  - **Evidenze:** test suite ✅ (49 passed).
+
+- **`4d25b47` — fix(pytest): force basetemp to src/tests/tmp cwd-agnostic**
+  - **Type:** FIXED
+  - **Cosa corregge:** elimina failure dei test da sottocartelle (es. `cd src && python -m pytest`) dovuti a `--basetemp=src/tests/tmp` interpretato come path relativo alla cwd.
+  - **Come:** introdotto `src/tests/conftest.py` che forza `--basetemp` a un path assoluto ancorato alla project root; mantenuto `testpaths = src/tests`.
+  - **Impatto:** test suite stabile indipendentemente dalla cwd.
+  - **Evidenze:** `python -m pytest` ✅ (root), `cd src && python -m pytest` ✅ (49 passed).
+
+##### Tooling hardening / packaging / docs alignment
+- **`2086deb` — docs: align README/ARCH/CHANGELOG/TIMELINE to current repo state**
+  - **Type:** CHANGED
+  - **Cosa cambia:** riallineamento documentazione principale allo stato reale del repository.
+  - **Impatto:** riduzione drift documentale.
+
+- **`e60b0ad` — chore(tools): harden clean_project script (safe-by-default)**
+  - **Type:** CHANGED
+  - **Cosa cambia:** riscrittura hardenizzata di `tools/clean_project.sh` con approccio SAFE-by-default.
+  - **Dettagli:**
+    - allowlist mirata (root cache + `src/` + `tools/` + `src/tests/tmp/**`);
+    - opt-in espliciti (OFF di default): `PURGE_LOGS`, `PURGE_OUTPUT`, `CLEAN_VENV`;
+    - root guard (`README.md` + `src/` + `tools/`) per prevenire esecuzioni fuori repository;
+    - output strutturato (sezioni + contatori) e modalità `DRY_RUN` / `VERBOSE`.
+  - **Impatto:** pulizia deterministica, auditabile e CI/Docker-ready senza rischio di cancellazioni accidentali.
+  - **Evidenze:** `DRY_RUN=true VERBOSE=true tools/clean_project.sh` ✅ · `python -m pytest` ✅ (49 passed).
+
+- **`a017ee0` — docs: close A2 and record clean_project hardening**
+  - **Type:** CHANGED
+  - **Cosa cambia:** chiusura documentale step A2 e registrazione evidenze hardening clean script.
+  - **Impatto:** timeline/docs coerenti con stato reale.
+
+- **`c201bd3` — chore(tools): improve tmp purge counting and glob safety**
+  - **Type:** CHANGED
+  - **Cosa cambia:** migliorati conteggi purge tmp e sicurezza nei glob dello script di clean.
+  - **Impatto:** maggiore robustezza e auditabilità dello script.
+
+- **`f418ce8` — docs(tools): document clean_project usage and flags**
+  - **Type:** CHANGED
+  - **Cosa cambia:** documentato uso di `tools/clean_project.sh`, flag e modalità operative.
+  - **Impatto:** onboarding/uso più chiaro.
+
+- **`eecde6e` — build(packaging): add pyproject and installable transcriber entrypoint**
+  - **Type:** ADDED
+  - **Cosa introduce:** progetto installabile (layout `src/`) con entrypoint CLI stabile `transcriber`.
+  - **Dettagli:**
+    - aggiunto `pyproject.toml` (setuptools) con `package-dir` su `src` e discovery `where = ["src"]`;
+    - definito `console script`: `transcriber = package.transcriber:main`;
+    - `transcriber --help` reso non-interattivo (fast-path `-h/--help`).
+  - **Impatto:** elimina workaround tipo `PYTHONPATH=src`; base più solida per CI/Docker.
+  - **Evidenze:** `python -m pip install -e .` ✅ · `transcriber --help` ✅ · `python -m pytest` ✅ (49 passed).
+
+- **`10b932f` — docs: close A3 packaging and installable transcriber entrypoint**
+  - **Type:** CHANGED
+  - **Cosa cambia:** chiusura documentale step A3 con evidenze packaging/entrypoint.
+  - **Impatto:** allineamento timeline/docs con stato reale del repo.
+
+- **`b370f72` — docs(readme): align quick start to installable transcriber entrypoint**
+  - **Type:** CHANGED
+  - **Cosa cambia:** aggiorna README per rendere `transcriber` il comando canonico post-packaging e rimuovere riferimenti obsoleti.
+  - **Dettagli:**
+    - Quick Start aggiornato con `python -m pip install -e .`;
+    - introdotto `transcriber --help` come verifica non-interattiva;
+    - sezione esecuzione riallineata (comando canonico + fallback).
+  - **Impatto:** documentazione coerente con stato reale, pronta per host/CI/Docker.
+  - **Evidenze:** `transcriber --help` ✅ · `python -m pytest` ✅ (49 passed).
+
+- **`e488b0d` — docs(timeline): reflect A4 progress and record host evidences**
+  - **Type:** CHANGED
+  - **Cosa cambia:** aggiornamento `docs/TIMELINE.md` con progressi A4 ed evidenze host.
+  - **Impatto:** audit trail documentale più accurato.
+
+- **`cc99303` — docs(changelog): record README alignment for transcriber entrypoint**
+  - **Type:** CHANGED
+  - **Cosa cambia:** aggiornamento `docs/CHANGELOG.md` per registrare il riallineamento README al nuovo entrypoint.
+  - **Impatto:** tracciabilità documentale delle modifiche A3/A4.
+
+- **`b345053` — docs(architecture): record transcriber canonical entrypoint and installable packaging**
+  - **Type:** CHANGED
+  - **Cosa cambia:** aggiornamento `docs/ARCHITECTURE.md` sui confini del packaging installabile e sull’entrypoint canonico `transcriber`.
+  - **Impatto:** architettura documentata in modo coerente con il codice.
 
 ---
 
