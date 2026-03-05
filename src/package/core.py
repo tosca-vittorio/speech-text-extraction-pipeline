@@ -11,7 +11,7 @@ import time
 import whisper
 
 from package.audio import get_audio_duration
-from package.naming import genera_nome_file_output
+from package.naming import NamingParams, genera_nome_file_output
 
 def transcribe(
     audio_path: str,
@@ -71,13 +71,15 @@ def transcribe(
     base_name = os.path.splitext(base)[0]
     modalita = "accurata" if modalita_acc else "standard"
     nome_base = genera_nome_file_output(
-        base_name=base_name,
-        modello=modello,
-        modalita=modalita,
-        tipo=tipo,
-        inizio=inizio,
-        fine=fine,
-        lang=lang,
+        NamingParams(
+            base_name=base_name,
+            modello=modello,
+            modalita=modalita,
+            tipo=tipo,
+            inizio=inizio,
+            fine=fine,
+            lang=lang,
+        )
     )
     txt_filename = f"{nome_base}.txt"
 

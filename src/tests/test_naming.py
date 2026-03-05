@@ -1,6 +1,6 @@
 import pytest
-from package.naming import genera_nome_file_output
 from package.errors import ConfigError
+from package.naming import NamingParams, genera_nome_file_output
 
 # ------------------------------------------------------------------ #
 # Parametrized: casi nominali                                        #
@@ -24,12 +24,14 @@ from package.errors import ConfigError
 )
 def test_genera_nome(base, mod, mode, tipo, iniz, fine, exp):
     name = genera_nome_file_output(
-        base_name=base,
-        modello=mod,
-        modalita=mode,
-        tipo=tipo,
-        inizio=iniz,
-        fine=fine,
+        NamingParams(
+            base_name=base,
+            modello=mod,
+            modalita=mode,
+            tipo=tipo,
+            inizio=iniz,
+            fine=fine,
+        )
     )
     assert name == exp
 
@@ -39,8 +41,7 @@ def test_genera_nome(base, mod, mode, tipo, iniz, fine, exp):
 # ------------------------------------------------------------------ #
 def test_parziale_missing_timestamps_raises():
     with pytest.raises(ConfigError):
-        genera_nome_file_output("x", "base", "standard",
-                                "parziale", None, None)
+        genera_nome_file_output(NamingParams("x", "base", "standard", "parziale", None, None))
 
 
 # ------------------------------------------------------------------ #
@@ -55,5 +56,5 @@ def test_parziale_missing_timestamps_raises():
     ],
 )
 def test_fallback_modello_modalita(mod, mode, exp_suffix):
-    res = genera_nome_file_output("base", mod, mode, "completa")
+    res = genera_nome_file_output(NamingParams("base", mod, mode, "completa"))
     assert res == f"base ({exp_suffix})"
