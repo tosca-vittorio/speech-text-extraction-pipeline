@@ -29,5 +29,8 @@ LOG_FILE = os.path.join(LOG_DIR, "whisper_benchmark.log")
 DEFAULT_LANG     = "it"
 MODEL_OPTIONS    = ["tiny", "base", "small", "medium"]
 DEVICE_OPTIONS   = ["cuda", "cpu"]
-MODALITA_OPTIONS = ["Standard – più leggibile, Whisper filtra automaticamente (consigliata per testo scorrevole)", "Accurata – più fedele, nessun filtro, adatta a sottotitoli o NLP"]
+MODALITA_OPTIONS = [
+    "Standard – più leggibile, Whisper filtra automaticamente (consigliata per testo scorrevole)",
+    "Accurata – più fedele, nessun filtro, adatta a sottotitoli o NLP",
+]
 SCOPE_OPTIONS    = ["Tutto", "Solo una parte"]
