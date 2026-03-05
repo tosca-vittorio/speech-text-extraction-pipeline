@@ -1,5 +1,12 @@
 # src/package/cli_utils.py
 
+"""
+Utility CLI.
+
+Contiene helper per input utente, validazione delle scelte e funzioni di
+supporto al flusso interattivo del transcriber.
+"""
+
 import platform
 from datetime import datetime
 from package.errors import InvalidChoiceError

@@ -1,4 +1,12 @@
 # src/package/audio.py
+
+"""
+Utility audio.
+
+Funzioni di supporto basate su ffmpeg/ffprobe per ricavare durata e tagliare
+segmenti audio in modo riproducibile.
+"""
+
 import os
 import subprocess
 import wave

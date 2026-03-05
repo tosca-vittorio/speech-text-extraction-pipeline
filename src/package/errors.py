@@ -1,5 +1,12 @@
 # src/package/errors.py
 
+"""
+Eccezioni custom del progetto.
+
+Raccoglie classi di errore applicative per distinguere input invalidi,
+errori di processing audio e condizioni gestibili dalla CLI.
+"""
+
 class TranscriberError(Exception):
     """Classe base per le eccezioni di trascrizione."""
 

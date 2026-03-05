@@ -1,5 +1,12 @@
 # src/package/logger.py
 
+"""
+Logging applicativo.
+
+Gestisce la scrittura del log benchmark delle trascrizioni in modo stabile
+e riproducibile (host, file, modello, device, modalità, tipo, parole, lingua).
+"""
+
 import os
 from datetime import datetime
 

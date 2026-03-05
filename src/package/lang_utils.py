@@ -1,5 +1,12 @@
 # src/package/lang_utils.py
 
+"""
+Gestione lingue.
+
+Espone le lingue supportate e funzioni helper per selezione/normalizzazione
+del codice lingua usato da Whisper e dalla naming strategy.
+"""
+
 def select_language() -> str:
     """
     Prompt interattivo per chiedere all'utente la lingua dell'audio.

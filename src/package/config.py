@@ -1,5 +1,12 @@
 # src/package/config.py
 
+"""
+Configurazione centralizzata del progetto.
+
+Contiene path di base (input/output/log/test resources) e opzioni default
+utilizzate dalla CLI (lingua, modelli, device, modalità, scope).
+"""
+
 import os
 
 # Base directory del progetto (dove risiedono cartelle audio/, log/, src/)
