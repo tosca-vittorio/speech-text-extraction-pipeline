@@ -195,9 +195,28 @@ python -m pylint --exit-zero src/package
 echo $?   # osservato: 0
 ```
 
-##### ⬜ A4.2.4 — Standardizzare “comando canonico” di lint (repo-level)
+##### ✅ A4.2.4 — Standardizzare “comando canonico” di lint (repo-level)
 
-**Scopo:** avere 1 comando stabile e documentato (es. `python -m pylint --exit-zero src/package`) come gate aggiuntivo.
+**Decisione:** il comando canonico di lint (repo-level, non bloccante durante burn-down strutturale) è:
+
+```bash
+python -m pylint --exit-zero src/package
+```
+
+**Perché:** consente un gate stabile, riproducibile e auditabile anche con warning strutturali ancora aperti (`too-many-*`), evitando hard fail durante la fase incrementale.
+
+**Nota operativa:** il comando hard resta usato come metrica di avanzamento/monitoraggio qualità:
+
+```bash
+python -m pylint src/package
+```
+
+**Evidenza (snapshot corrente):**
+
+* `python -m pytest` → **49 passed**
+* `python -m pylint src/package` → **9.63/10**, exit code **8** (warning residui strutturali)
+
+---
 
 ##### ⬜ A4.2.5 — Definire config unica (UNA sola fonte)
 
