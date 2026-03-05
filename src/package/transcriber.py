@@ -164,7 +164,8 @@ def main() -> None:
 
         safe_inizio = inizio.replace(":", "")
         safe_fine = fine.replace(":", "")
-        clip_path = str(Path(TRANSCRIPTION_DIR) / f"{Path(file_audio).stem}_{safe_inizio}-{safe_fine}_clip.wav")
+        clip_name = f"{Path(file_audio).stem}_{safe_inizio}-{safe_fine}_clip.wav"
+        clip_path = str(Path(TRANSCRIPTION_DIR) / clip_name)
 
         # eventuale sovrascrittura clip
         if not _should_overwrite(clip_path):
