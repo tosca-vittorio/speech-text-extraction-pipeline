@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import pytest
-
+import package.lang_utils as lang_mod
 import package.transcriber as trans_mod
 import package.cli_utils as cli_mod
 
@@ -109,7 +109,9 @@ def test_flusso_completa(monkeypatch, capsys, isolate):
         "Tutto",                   # Ambito
         "Esci"                     # Uscita finale
     ])
-    monkeypatch.setattr(trans_mod, "ask_choice", lambda *_: next(seq))
+    fake_choice = lambda *_: next(seq)
+    monkeypatch.setattr(trans_mod, "ask_choice", fake_choice)
+    monkeypatch.setattr(lang_mod, "ask_choice", fake_choice)
     code, out, _ = run_and_capture(capsys)
 
     audio_path, kwargs = isolate["transcribe"]
@@ -133,7 +135,9 @@ def test_flusso_parziale(monkeypatch, capsys, isolate):
         "Solo una parte",          # Ambito
         "No"                       # Risposta al prompt “Conservi clip?”
     ])
-    monkeypatch.setattr(trans_mod, "ask_choice", lambda *_: next(seq))
+    fake_choice = lambda *_: next(seq)
+    monkeypatch.setattr(trans_mod, "ask_choice", fake_choice)
+    monkeypatch.setattr(lang_mod, "ask_choice", fake_choice)
     inputs = iter(["00:00:05", "00:00:10"])
     monkeypatch.setattr("builtins.input", lambda _="": next(inputs))
 
@@ -160,7 +164,9 @@ def test_error_handling_and_recovery(monkeypatch):
         "Solo una parte",          # Ambito
         "No"                       # Risposta al prompt “Conservi clip?”
     ])
-    monkeypatch.setattr(trans_mod, "ask_choice", lambda *_: next(seq))
+    fake_choice = lambda *_: next(seq)
+    monkeypatch.setattr(trans_mod, "ask_choice", fake_choice)
+    monkeypatch.setattr(lang_mod, "ask_choice", fake_choice)
     monkeypatch.setattr(
         trans_mod, "transcribe",
         lambda *_a, **_k: (_ for _ in ()).throw(TypeError("Parametri mancanti"))
@@ -189,7 +195,9 @@ def test_overwrite_yes(monkeypatch, capsys, isolate, tmp_path):
         "Tutto",                   # Ambito
         "Esci"                     # Uscita finale
     ])
-    monkeypatch.setattr(trans_mod, "ask_choice", lambda *_: next(seq))
+    fake_choice = lambda *_: next(seq)
+    monkeypatch.setattr(trans_mod, "ask_choice", fake_choice)
+    monkeypatch.setattr(lang_mod, "ask_choice", fake_choice)
     code, out, _ = run_and_capture(capsys)
 
     # deve aver sovrascritto senza prompt
@@ -214,7 +222,9 @@ def test_overwrite_no(monkeypatch, capsys, isolate, tmp_path):
         "Tutto",                   # Ambito
         "Esci"                     # Uscita finale
     ])
-    monkeypatch.setattr(trans_mod, "ask_choice", lambda *_: next(seq))
+    fake_choice = lambda *_: next(seq)
+    monkeypatch.setattr(trans_mod, "ask_choice", fake_choice)
+    monkeypatch.setattr(lang_mod, "ask_choice", fake_choice)
     code, out, _ = run_and_capture(capsys)
 
     # salvataggio rifiutato
@@ -240,7 +250,9 @@ def test_overwrite_prompt_no(monkeypatch, capsys, isolate, tmp_path):
         "Tutto",                   # Ambito
         "No"                       # Risposta al prompt overwrite
     ])
-    monkeypatch.setattr(trans_mod, "ask_choice", lambda *_: next(seq))
+    fake_choice = lambda *_: next(seq)
+    monkeypatch.setattr(trans_mod, "ask_choice", fake_choice)
+    monkeypatch.setattr(lang_mod, "ask_choice", fake_choice)
 
     code, out, _ = run_and_capture(capsys)
     assert "Salvataggio annullato" in out and code == 0
@@ -262,7 +274,9 @@ def test_overwrite_prompt_yes(monkeypatch, capsys, isolate, tmp_path):
         "Tutto",                   # Ambito
         "Sì"                       # accetta sovrascrittura
     ])
-    monkeypatch.setattr(trans_mod, "ask_choice", lambda *_: next(seq))
+    fake_choice = lambda *_: next(seq)
+    monkeypatch.setattr(trans_mod, "ask_choice", fake_choice)
+    monkeypatch.setattr(lang_mod, "ask_choice", fake_choice)
 
     code, out, _ = run_and_capture(capsys)
     assert "Salvataggio annullato" not in out and code == 0
