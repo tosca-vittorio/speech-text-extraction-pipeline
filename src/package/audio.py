@@ -90,14 +90,13 @@ def taglia_audio(
     subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return output_file
 
-
 def get_audio_duration(file_path: str) -> str:
     """
-    Ritorna la durata del file audio sotto forma "hh:mm:ss".
+    Restituisce la durata del file audio/video in formato HH:MM:SS.
 
-    • Per .wav si usa il modulo wave.  
-    • Per gli altri formati si interroga ffprobe.  
-    Se qualcosa va storto restituisce "N/A".
+    - Per WAV usa la libreria standard (nessuna dipendenza esterna).
+    - Per altri formati usa ffprobe.
+    - Se qualcosa va storto restituisce "N/A".
     """
     try:
         # --- caso WAV (senza ffprobe) --------------------------------------------------
@@ -121,6 +120,7 @@ def get_audio_duration(file_path: str) -> str:
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            check=False,
         )
         text = (
             res.stdout.decode().strip()
@@ -130,5 +130,5 @@ def get_audio_duration(file_path: str) -> str:
         dur = float(text)
         return str(timedelta(seconds=round(dur)))
 
-    except Exception:
+    except (OSError, ValueError, RuntimeError, EOFError, wave.Error, subprocess.SubprocessError):
         return "N/A"
