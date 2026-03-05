@@ -114,7 +114,11 @@ def get_audio_duration(file_path: str) -> str:
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
         )
-        text = res.stdout.decode().strip() if isinstance(res.stdout, bytes) else str(res.stdout).strip()
+        text = (
+            res.stdout.decode().strip()
+            if isinstance(res.stdout, bytes)
+            else str(res.stdout).strip()
+        )
         dur = float(text)
         return str(timedelta(seconds=round(dur)))
 
