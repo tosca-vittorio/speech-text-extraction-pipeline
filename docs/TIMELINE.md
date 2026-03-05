@@ -255,6 +255,107 @@ python -m pylint src/package
 # -> rating osservato ~9.30/10 (hard exit code osservato: 28)
 ```
 
+###### ✅ A4.2.6.c — Fix broad-exception in `cli_utils.get_csproduct_name()` (narrow exceptions)
+**Scopo:** eliminare `W0718 broad-exception-caught` mantenendo identico comportamento di fallback.
+
+**Decisione:** sostituito `except Exception` con catch specifico per failure OS/subprocess/parsing:
+- `FileNotFoundError`, `OSError` → `wmic` assente / problemi OS
+- `subprocess.CalledProcessError` → esecuzione comando fallita (quando usato `check=True`)
+- `ValueError` → output/parsing inatteso (difensivo)
+
+**Commit di chiusura:**
+- `b51b701` — `chore(lint): narrow exceptions in csproduct lookup`
+
+**Evidenze:**
+```bash
+python -m pytest
+# -> 49 passed
+
+python -m pylint src/package
+# -> rating osservato >= 9.48/10 (hard exit code non-zero)
+```
+
+###### ✅ A4.2.6.d — Stabilizzare monkeypatch `ask_choice` (import toplevel) + fix test transcriber
+
+**Problema:** spostando `ask_choice` a import toplevel in `lang_utils`, i test che patchavano
+`package.cli_utils.ask_choice` non intercettavano più la chiamata reale (simbolo già “bound” in `lang_utils`),
+causando `pytest: reading from stdin` e `StopIteration` nei test end-to-end del transcriber.
+
+**Decisione:** mantenere `ask_choice` importato a toplevel (best practice per lint e leggibilità) e
+allineare i test a patchare il simbolo effettivamente usato:
+
+* `package.lang_utils.ask_choice`
+* nei test transcriber: patch in parallelo `trans_mod.ask_choice` e `lang_mod.ask_choice` con la stessa sequenza.
+
+**Commit di chiusura:**
+
+* `70d7977` — `test(lang): align monkeypatch targets with toplevel ask_choice import`
+
+**Evidenze:**
+
+```bash
+python -m pytest
+# -> 49 passed
+```
+
+###### ✅ A4.2.6.e — Fix `invalid-name` in lang utils (LANGUAGES → languages)
+
+**Scopo:** eliminare `C0103 invalid-name` senza cambiare il contratto della funzione.
+
+**Commit di chiusura:**
+
+* `12f30f8` — `chore(lint): rename local languages mapping in lang utils`
+
+**Evidenze:**
+
+```bash
+python -m pytest
+# -> 49 passed
+
+python -m pylint src/package
+# -> rating osservato 9.56/10
+```
+
+###### ✅ A4.2.6.f — Remove `unnecessary-lambda-assignment` in naming (lambda → helper)
+
+**Scopo:** eliminare `C3001 unnecessary-lambda-assignment` sostituendo la lambda locale con una helper `def`.
+
+**Commit di chiusura:**
+
+* `ceefa41` — `chore(lint): replace local lambda with helper in naming`
+
+**Evidenze:**
+
+```bash
+python -m pytest
+# -> 49 passed
+
+python -m pylint src/package
+# -> rating osservato 9.59/10
+```
+
+###### ✅ A4.2.6.g — Annotare broad catch intenzionale nel wrapper CLI (`__main__`)
+
+**Contesto:** nel blocco `if __name__ == "__main__":` è accettabile un catch-all finale per stampare
+un messaggio “Errore imprevisto” e terminare in modo controllato (entrypoint CLI).
+
+**Decisione:** mantenere `except Exception` ma documentare/annotare l’intento con disable mirato Pylint
+sulla singola riga (no soppressione globale).
+
+**Commit di chiusura:**
+- `0a53f8f` — `chore(lint): annotate intentional broad catch in cli entrypoint`
+
+**Evidenze:**
+
+```bash
+python -m pytest
+# -> 49 passed
+
+python -m pylint src/package
+echo $?
+# -> rating osservato 9.63/10 (exit code osservato: 8)
+```
+
 ---
 
 ### ⬜ A4.3 — Avviare “pulizia” dal programma Python (menu/command)
