@@ -269,5 +269,5 @@ if __name__ == "__main__":
     except (InvalidChoiceError, ConfigError,
             AudioProcessingError, TranscriberError) as e:
         print(f"❌ {e.__class__.__name__}: {e}")
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"❌ Errore imprevisto: {e}")
