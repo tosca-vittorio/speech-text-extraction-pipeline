@@ -20,7 +20,8 @@ def log_transcription(
 ) -> None:
     """
     Appende una riga a LOG_FILE con il seguente formato:
-      [YYYY-MM-DD HH:MM:SS] Host: ... | File: ... | Modello: ... | ... | Parole trascritte: N [| Lingua: <codice>]
+        [YYYY-MM-DD HH:MM:SS] Host: ... | File: ... | Modello: ... | ... |
+        Parole trascritte: N [| Lingua: <codice>]
 
     Mantiene esattamente lo stesso formato di prima; se 'lingua' non è None,
     aggiunge " | Lingua: <codice>" alla fine.
