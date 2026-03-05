@@ -176,7 +176,7 @@ def main() -> None:
         try:
             taglia_audio(file_audio, inizio, fine, output_file=clip_path)
         except Exception as exc:
-            raise AudioProcessingError(f"Errore taglio audio: {exc}")
+            raise AudioProcessingError(f"Errore taglio audio: {exc}") from exc
 
         # trascrivi la clip
         result = transcribe(
@@ -221,7 +221,7 @@ def main() -> None:
         with open(txt_path, "w", encoding="utf-8") as f:
             f.write(result["text"])
     except Exception as exc:
-        raise AudioProcessingError(f"Errore salvataggio trascrizione: {exc}")
+        raise AudioProcessingError(f"Errore salvataggio trascrizione: {exc}") from exc
 
     # ───────────── riepilogo + log ───────────────────────────
     m, s = divmod(result["duration_proc"], 60)
