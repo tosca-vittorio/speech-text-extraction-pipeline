@@ -1,149 +1,147 @@
 ## Branch: [development]
 
 ### [Unreleased]
-> Scope corrente: A4.2 (Pylint burn-down incrementale con commit atomici, pytest sempre verde, evidenze registrate in TIMELINE)
+> Scope corrente: **A4.2** — Pylint burn-down incrementale con commit atomici, test sempre verdi, evidenze tracciate in `docs/TIMELINE.md`.
 
-#### A4.2 — Pylint burn-down (cheap wins + hardening) [ordine git log: più recente → più vecchio]
+#### A4.2 — Pylint burn-down (cheap wins + hardening)
+> Ordinamento: **git log (più recente → più vecchio)** · principio **truth-first**: qui è riportato solo ciò che è committato.
 
-##### Docs (tracking / stato finale del blocco)
+- **`faba031` — refactor(core): group output filename params to reduce arguments**
+  - **Type:** CHANGED · **Categoria:** Refactor
+  - **Cosa cambia:** introdotto `OutputTxtNameParams` + helper `_build_output_txt_filename(params)` per evitare firme con troppi argomenti.
+  - **Impatto:** `core.py` raggiunge **10.00/10**; nessun cambio di contract su naming output.
+
+- **`a2dce6a` — refactor(core): add TranscribeParams and update call sites/tests**
+  - **Type:** CHANGED · **Categoria:** Refactor
+  - **Cosa cambia:** `core.transcribe()` ora accetta un unico oggetto `TranscribeParams`; call-site e test riallineati.
+  - **Impatto:** riduce superficie API e prepara refactor successivi; test invariati e verdi.
+
+- **`09d42cd` — docs(timeline): record A4.2.6.h NamingParams refactor progress**
+  - **Type:** CHANGED · **Categoria:** Docs
+  - **Cosa cambia:** aggiornato `docs/TIMELINE.md` con chiusura e evidenze del subtask `A4.2.6.h`.
+  - **Impatto:** audit trail coerente (truth-first).
+
+- **`797399c` — refactor(naming): introduce NamingParams and update call sites**
+  - **Type:** CHANGED · **Categoria:** Refactor
+  - **Cosa cambia:** introdotta dataclass immutabile `NamingParams`; `genera_nome_file_output()` passa a singolo argomento; aggiornati call-site e test.
+  - **Impatto:** `naming.py` passa a **10.00/10** eliminando `too-many-arguments/too-many-positional-arguments` sul modulo.
+
+- **`13b3e57` — docs(timeline): close A4.2.4 canonical soft pylint command**
+  - **Type:** CHANGED · **Categoria:** Docs
+  - **Cosa cambia:** fissato comando canonico di lint **soft** (`--exit-zero`) e distinto dal run hard come metrica.
+  - **Impatto:** gate documentato, riproducibile e auditabile durante il burn-down.
+
+- **`16d4e4b` — docs(changelog): record A4.2 pylint burn-down and repo hardening history**
+  - **Type:** CHANGED · **Categoria:** Docs
+  - **Cosa cambia:** aggiornamento storico/riordino del changelog per il ciclo A4.2.
+  - **Impatto:** tracciabilità consolidata.
+
 - **`22613bf` — docs(timeline): record A4.2 lint burn-down cheap wins**
-  - **Type:** CHANGED
+  - **Type:** CHANGED · **Categoria:** Docs
   - **Cosa cambia:** aggiornata `docs/TIMELINE.md` con subtask `A4.2.6.c` → `A4.2.6.g` e relative evidenze.
   - **Impatto:** formalizzazione del completamento cheap wins; warning residui solo strutturali (`too-many-*`).
 
-##### Chore / Lint (seconda ondata cheap wins + test alignment)
 - **`0a53f8f` — chore(lint): annotate intentional broad catch in cli entrypoint**
-  - **Type:** CHANGED
-  - **Cosa cambia:** annotato il `catch-all` finale nel wrapper CLI (`if __name__ == "__main__":`) con disable mirato Pylint.
-  - **Dettagli:**
-    - broad catch **intenzionale** per stampare un errore utente leggibile in entrypoint;
-    - nessuna soppressione globale delle regole lint.
-  - **Impatto:** rimosso warning `W0718` residuo nel wrapper CLI.
-  - **Evidenze:** `python -m pytest` ✅ (49 passed), `python -m pylint src/package` → rating **9.63/10**.
+  - **Type:** CHANGED · **Categoria:** Lint
+  - **Cosa cambia:** annotato il `catch-all` finale nel wrapper CLI con disable mirato Pylint.
+  - **Impatto:** rimosso warning `W0718` residuo nel wrapper CLI; nessuna soppressione globale.
 
 - **`ceefa41` — chore(lint): replace local lambda with helper in naming**
-  - **Type:** CHANGED
+  - **Type:** CHANGED · **Categoria:** Lint
   - **Cosa cambia:** sostituita lambda locale in `naming.py` con helper `def`.
   - **Impatto:** rimozione `C3001 unnecessary-lambda-assignment` senza cambiare comportamento.
-  - **Evidenze:** `python -m pytest` ✅ (49 passed), Pylint rating **9.59/10**.
 
 - **`12f30f8` — chore(lint): rename local languages mapping in lang utils**
-  - **Type:** CHANGED
+  - **Type:** CHANGED · **Categoria:** Lint
   - **Cosa cambia:** rinominata variabile locale `LANGUAGES` → `languages` in `lang_utils.py`.
   - **Impatto:** rimozione `C0103 invalid-name` senza cambiare API/contratto.
-  - **Evidenze:** `python -m pytest` ✅ (49 passed), Pylint rating **9.56/10**.
 
 - **`70d7977` — test(lang): align monkeypatch targets with toplevel ask_choice import**
-  - **Type:** CHANGED
-  - **Cosa cambia:** allineati i test al nuovo binding dell’import `ask_choice` in `lang_utils` (import toplevel):
-    - patch del simbolo realmente usato (`package.lang_utils.ask_choice`);
-    - nei test end-to-end del transcriber, patch in parallelo di `trans_mod.ask_choice` e `lang_mod.ask_choice` con la stessa sequenza.
-  - **Impatto:** risolti failure da `pytest: reading from stdin` / `StopIteration` emersi dopo il refactor lint-driven.
-  - **Evidenze:** `python -m pytest` ✅ (49 passed).
+  - **Type:** CHANGED · **Categoria:** Test
+  - **Cosa cambia:** riallineati i test al binding realmente usato (`package.lang_utils.ask_choice`) e patch coerente nei test end-to-end.
+  - **Impatto:** risolti failure da stdin/StopIteration emersi dopo refactor lint-driven.
 
 - **`b51b701` — chore(lint): narrow exceptions in csproduct lookup**
-  - **Type:** CHANGED
-  - **Cosa cambia:** in `cli_utils.get_csproduct_name()` sostituito `except Exception` con catch specifici:
-    - `FileNotFoundError`, `OSError`
-    - `subprocess.CalledProcessError`
-    - `ValueError`
-  - **Impatto:** rimozione `W0718` locale mantenendo il fallback su `platform.node()`.
-  - **Evidenze:** `python -m pytest` ✅ (49 passed), Pylint rating ~**9.48/10**.
+  - **Type:** CHANGED · **Categoria:** Lint
+  - **Cosa cambia:** in `cli_utils.get_csproduct_name()` sostituito `except Exception` con catch specifici.
+  - **Impatto:** rimozione `W0718` locale mantenendo fallback su `platform.node()`.
 
 - **`8d4f2e7` — chore(lint): add transcriber module and main docstrings**
-  - **Type:** CHANGED
-  - **Cosa cambia:** aggiunti header/module docstring canonico in `transcriber.py` e docstring a `main()`.
-  - **Impatto:** migliore leggibilità/documentazione del punto d’ingresso CLI installabile.
+  - **Type:** CHANGED · **Categoria:** Lint
+  - **Cosa cambia:** aggiunti module docstring in `transcriber.py` e docstring a `main()`.
+  - **Impatto:** migliore leggibilità/documentazione del punto d’ingresso CLI.
 
 - **`26bc282` — chore(lint): move subprocess import to toplevel in cli utils**
-  - **Type:** CHANGED
+  - **Type:** CHANGED · **Categoria:** Lint
   - **Cosa cambia:** spostato `import subprocess` a livello top-level in `cli_utils.py`.
-  - **Impatto:** allineamento a best practice/import hygiene e regole lint.
+  - **Impatto:** allineamento a import hygiene / regole lint.
 
 - **`871a002` — chore(lint): add exception chaining in transcriber errors**
-  - **Type:** CHANGED
-  - **Cosa cambia:** aggiunta exception chaining (`raise ... from exc`) nei percorsi di errore del transcriber.
-  - **Impatto:** migliorata tracciabilità della causa originale senza cambiare il flusso utente CLI.
+  - **Type:** CHANGED · **Categoria:** Lint
+  - **Cosa cambia:** introdotto `raise ... from exc` nei percorsi di errore del transcriber.
+  - **Impatto:** migliorata tracciabilità delle cause senza cambiare il flusso utente.
 
-##### Docs + Fix (checkpoint intermedio A4.2)
 - **`0728d73` — docs(timeline): record A4.2 burn-down progress and audio duration hardening**
-  - **Type:** CHANGED
-  - **Cosa cambia:** aggiorna `docs/TIMELINE.md` con avanzamento A4.2, evidenze intermedie e hardening `get_audio_duration()`.
+  - **Type:** CHANGED · **Categoria:** Docs
+  - **Cosa cambia:** aggiornato tracking A4.2 + evidenze intermedie e hardening `get_audio_duration()`.
   - **Impatto:** audit trail coerente del burn-down.
 
 - **`0e06f64` — fix(audio): return N/A on invalid wav and ffprobe failures**
-  - **Type:** FIXED
-  - **Cosa corregge:** hardening di `get_audio_duration()` su input WAV invalidi / fallback ffprobe.
-  - **Dettagli:**
-    - gestisce WAV “stub/invalidi” (es. `EOFError`, `wave.Error`) senza propagare eccezioni;
-    - gestisce failure `ffprobe` restituendo `"N/A"`;
-    - evita crash su input corrotti / failure di tool esterni.
-  - **Impatto:** pipeline più robusta su casi reali/di test.
-  - **Evidenze:** `python -m pytest` ✅ (49 passed).
+  - **Type:** FIXED · **Categoria:** Fix
+  - **Cosa corregge:** hardening di `get_audio_duration()` su WAV invalidi / failure `ffprobe` con ritorno `"N/A"`.
+  - **Impatto:** pipeline più robusta su input corrotti e test stub.
 
 - **`7e6ed0a` — chore(lint): add missing module docstrings**
-  - **Type:** CHANGED
-  - **Cosa cambia:** aggiunte module docstring ai moduli base:
-    - `src/package/audio.py`
-    - `src/package/cli_utils.py`
-    - `src/package/config.py`
-    - `src/package/errors.py`
-    - `src/package/lang_utils.py`
-    - `src/package/logger.py`
-  - **Impatto:** rimozione warning `missing-module-docstring`.
-  - **Evidenze:** `python -m pytest` ✅ (49 passed). Pylint rating in crescita (~9.2+).
+  - **Type:** CHANGED · **Categoria:** Lint
+  - **Cosa cambia:** aggiunte module docstring ai moduli base (`audio/cli_utils/config/errors/lang_utils/logger`).
+  - **Impatto:** rimozione `missing-module-docstring`.
 
-##### Chore / Lint (cheap wins iniziali)
 - **`bb686ed` — chore(lint): wrap config MODALITA_OPTIONS into multiline list**
-  - **Type:** CHANGED
+  - **Type:** CHANGED · **Categoria:** Lint
   - **Cosa cambia:** spezzata `MODALITA_OPTIONS` in lista multiline in `config.py`.
   - **Impatto:** conformità lint su linee lunghe.
 
 - **`dfb3cdf` — chore(lint): split long clip path construction in transcriber**
-  - **Type:** CHANGED
-  - **Cosa cambia:** spezzata la costruzione del path clip in `transcriber.py` (variabile intermedia).
+  - **Type:** CHANGED · **Categoria:** Lint
+  - **Cosa cambia:** spezzata la costruzione del path clip in `transcriber.py`.
   - **Impatto:** migliore leggibilità e riduzione warning `line-too-long`.
 
 - **`3038fcd` — chore(lint): wrap long logger docstring line**
-  - **Type:** CHANGED
+  - **Type:** CHANGED · **Categoria:** Lint
   - **Cosa cambia:** wrapping di una riga lunga nel docstring di `log_transcription()`.
   - **Impatto:** conformità `line-too-long`.
 
 - **`347e275` — chore(lint): reorder imports in core to satisfy pylint**
-  - **Type:** CHANGED
-  - **Cosa cambia:** riordino import in `core.py` per rispettare le regole pylint (separazione stdlib / local imports).
+  - **Type:** CHANGED · **Categoria:** Lint
+  - **Cosa cambia:** riordino import in `core.py` secondo stdlib/third-party/first-party.
   - **Impatto:** riduzione warning lint senza impatto funzionale.
 
 - **`a6d4989` — chore(lint): split long ternary in audio duration parsing**
-  - **Type:** CHANGED
-  - **Cosa cambia:** refactor di una ternaria troppo lunga in `audio.py` (parsing `stdout`) in blocco multiline.
+  - **Type:** CHANGED · **Categoria:** Lint
+  - **Cosa cambia:** refactor ternaria lunga in `audio.py`.
   - **Impatto:** migliore leggibilità e conformità `line-too-long`.
 
 - **`a4932f3` — chore(lint): normalize trailing newlines in config**
-  - **Type:** CHANGED
-  - **Cosa cambia:** normalizzazione newline finali / trailing newline in `config.py`.
-  - **Impatto:** riduzione warning stilistici e maggiore coerenza file.
+  - **Type:** CHANGED · **Categoria:** Lint
+  - **Cosa cambia:** normalizzazione newline finali in `config.py`.
+  - **Impatto:** coerenza stile.
 
 - **`11b0bfd` — chore(lint): add missing final newline in package init**
-  - **Type:** CHANGED
+  - **Type:** CHANGED · **Categoria:** Lint
   - **Cosa cambia:** aggiunta newline finale mancante in `src/package/__init__.py`.
-  - **Impatto:** allineamento a regole stile/lint di base.
+  - **Impatto:** allineamento a regole stile.
 
-##### Docs (setup / tracking iniziale del burn-down)
 - **`4110064` — docs(timeline): expand A4.2 pylint gate into macro-subtasks and record evidences**
-  - **Type:** CHANGED
-  - **Cosa cambia:** espande `docs/TIMELINE.md` con macro-subtask A4.2, regole burn-down e formato evidenze.
+  - **Type:** CHANGED · **Categoria:** Docs
+  - **Cosa cambia:** espanse macro-sezioni A4.2 e formato evidenze in `docs/TIMELINE.md`.
   - **Impatto:** tracking più rigoroso e auditabile del quality gate lint.
 
-##### Quality gates (evidenze consolidate per il blocco A4.2)
-- Test suite: `python -m pytest` → **49 passed** (stabile in tutte le iterazioni rilevanti).
-- Pylint hard-run: `python -m pylint src/package` → rating incrementale fino a **9.63 / 10**.
-- Hard-run Pylint ancora **non-zero** (ultimo exit code osservato: **8**), con warning residui **solo strutturali**:
-  - `too-many-arguments`
-  - `too-many-positional-arguments`
-  - `too-many-locals`
-  - `too-many-branches`
-  - `too-many-statements`
+##### Quality gates (snapshot corrente)
+- Test suite: `python -m pytest` → **49 passed**
+- Pylint (hard-run): `python -m pylint src/package` → **9.83/10**, **exit code 8**
+- Warning residui (solo strutturali):
+  - `too-many-arguments`, `too-many-positional-arguments` (logger)
+  - `too-many-locals`, `too-many-branches`, `too-many-statements` (transcriber)
 
 #### Historical context (pre-A4.2 / hardening, packaging, repo hygiene) [ordine cronologico]
 

@@ -401,6 +401,38 @@ echo $?
 # -> warning residui: solo strutturali in core/logger/transcriber (too-many-*)
 ```
 
+###### ✅ A4.2.6.i — Refactor core: introdurre `TranscribeParams` e parametri output filename (riduzione argomenti)
+
+**Scopo:** ridurre `too-many-arguments/too-many-positional-arguments` in `core.py` senza sopprimere warning, consolidando la firma
+di `transcribe()` e rendendo espliciti i parametri di output naming.
+
+**Decisione:**
+- introdotta dataclass immutabile `TranscribeParams` come input unico per `core.transcribe()`;
+- introdotta dataclass immutabile `OutputTxtNameParams` + helper `_build_output_txt_filename(params)` per generare il `.txt`
+  senza proliferare argomenti.
+
+**Commit di chiusura:**
+- `a2dce6a` — `refactor(core): add TranscribeParams and update call sites/tests`
+- `faba031` — `refactor(core): group output filename params to reduce arguments`
+
+**Impatto:**
+- `src/package/core.py` passa a **10.00/10** (riduzione argomenti e consolidamento helpers).
+- Test suite invariata e verde (contratti mantenuti).
+
+**Evidenze:**
+```bash
+python -m pytest -q
+# -> 49 passed
+
+python -m pylint src/package/core.py
+# -> 10.00/10
+
+python -m pylint src/package
+echo $?
+# -> 9.83/10 (exit code: 8)
+# -> residui strutturali solo in logger/transcriber (too-many-*)
+```
+
 ---
 
 ### ⬜ A4.3 — Avviare “pulizia” dal programma Python (menu/command)
