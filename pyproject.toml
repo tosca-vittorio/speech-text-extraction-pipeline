@@ -17,3 +17,14 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pylint.main]
+py-version = "3.10"
+
+[tool.pylint.reports]
+output-format = "text"
+score = "y"
+
+[tool.pylint.messages_control]
+# A4.2 policy: no global disables. We refactor structural warnings away.
+disable = []

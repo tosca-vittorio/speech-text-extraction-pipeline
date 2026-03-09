@@ -117,7 +117,9 @@ def test_flusso_completa(monkeypatch, capsys, isolate):
     req, kwargs = isolate["transcribe"]
     assert req.audio_path.endswith(".wav") and req.modello == "tiny"
     assert req.lang == "en"                              # Verifica lingua passata
-    assert isolate["log"]["parola_count"] == 42
+    log_params = isolate["log"]["params"]
+    assert log_params.metrics.parola_count == 42
+    assert log_params.output.lang == "en"
     assert ".txt" in out and code == 0
 
 

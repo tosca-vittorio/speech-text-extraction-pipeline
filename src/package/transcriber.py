@@ -37,7 +37,13 @@ from package.audio import (
     get_audio_duration,
 )
 
-from package.logger import log_transcription
+from package.logger import (
+    DeviceInfo,
+    LogTranscriptionParams,
+    OutputInfo,
+    TranscriptionMetrics,
+    log_transcription,
+)
 from package.errors import (
     TranscriberError,
     InvalidChoiceError,
@@ -79,6 +85,90 @@ def _should_overwrite(path: str) -> bool:
         ["Sì", "No"],
     ) == "Sì"
 
+def _select_input_file() -> str:
+    """Mostra i file disponibili e restituisce il path assoluto del file scelto."""
+    files = (
+        [f"[🎧] {file_name}" for file_name in list_audio_files(INPUT_AUDIO_DIR)]
+        + [f"[🎬] {file_name}" for file_name in list_audio_files(INPUT_VIDEO_DIR)]
+        + [f"[🧪] {file_name}" for file_name in list_audio_files(TEST_AUDIO_DIR)]
+    )
+    if not files:
+        raise ConfigError("Nessun file in input/audio, input/video o tests/resources.")
+
+    scelta = ask_choice("🎵 Seleziona il file da trascrivere:", files)
+    prefissi = {
+        "[🎧]": INPUT_AUDIO_DIR,
+        "[🎬]": INPUT_VIDEO_DIR,
+        "[🧪]": TEST_AUDIO_DIR,
+    }
+
+    for prefisso, directory in prefissi.items():
+        if scelta.startswith(prefisso):
+            return os.path.join(directory, scelta[len(prefisso):].strip())
+
+    raise InvalidChoiceError("Scelta file non valida.")
+
+def _transcribe_partial_scope(
+    file_audio: str,
+    modello: str,
+    device: str,
+    lang: str,
+    modalita_acc: bool,
+) -> tuple[dict, str | None]:
+    """Gestisce il flusso di trascrizione parziale e restituisce risultato + clip_path."""
+    while True:
+        inizio = valida_timestamp(input("Da (mm:ss o hh:mm:ss): ").strip())
+        if inizio:
+            break
+        print("❌ Formato non valido. Riprova.")
+
+    while True:
+        fine = valida_timestamp(input("A (mm:ss o hh:mm:ss): ").strip())
+        if fine:
+            break
+        print("❌ Formato non valido. Riprova.")
+
+    durata_tot = get_audio_duration(file_audio) or "99:59:59"
+    if timestamp_in_secondi(inizio) >= timestamp_in_secondi(fine):
+        raise InvalidChoiceError("Il timestamp di inizio deve precedere quello di fine.")
+    if timestamp_in_secondi(fine) > timestamp_in_secondi(durata_tot):
+        raise InvalidChoiceError(f"Fine ({fine}) supera durata file ({durata_tot}).")
+
+    safe_inizio = inizio.replace(":", "")
+    safe_fine = fine.replace(":", "")
+    clip_name = f"{Path(file_audio).stem}_{safe_inizio}-{safe_fine}_clip.wav"
+    clip_path = str(Path(TRANSCRIPTION_DIR) / clip_name)
+
+    if not _should_overwrite(clip_path):
+        print("Operazione annullata (clip già esistente).")
+        sys.exit(0)
+
+    try:
+        taglia_audio(file_audio, inizio, fine, output_file=clip_path)
+    except Exception as exc:
+        raise AudioProcessingError(f"Errore taglio audio: {exc}") from exc
+
+    result = transcribe(
+        TranscribeParams(
+            audio_path=clip_path,
+            modello=modello,
+            device=device,
+            lang=lang,
+            modalita_acc=modalita_acc,
+            tipo="parziale",
+            intervallo=(inizio, fine),
+        )
+    )
+
+    if ask_choice("🗂️  Conservi la clip tagliata?", ["Sì", "No"]) == "No":
+        try:
+            os.remove(clip_path)
+            clip_path = None
+        except OSError as exc:
+            print(f"⚠️  Impossibile eliminare clip: {exc}")
+
+    return result, clip_path
+
 # ─────────────────────────── main CLI ──────────────────────────────
 def main() -> None:
     """
@@ -108,23 +198,7 @@ def main() -> None:
         sys.exit(0)
 
     # 1) elenco file
-    files = (
-        [f"[🎧] {f}" for f in list_audio_files(INPUT_AUDIO_DIR)]
-      + [f"[🎬] {f}" for f in list_audio_files(INPUT_VIDEO_DIR)]
-      + [f"[🧪] {f}" for f in list_audio_files(TEST_AUDIO_DIR)]
-)
-    if not files:
-        raise ConfigError("Nessun file in input/audio, input/video o tests/resources.")
-
-    scelta = ask_choice("🎵 Seleziona il file da trascrivere:", files)
-    if scelta.startswith("[🎧]"):
-        file_audio = os.path.join(INPUT_AUDIO_DIR, scelta[4:].strip())
-    elif scelta.startswith("[🎬]"):
-        file_audio = os.path.join(INPUT_VIDEO_DIR, scelta[4:].strip())
-    elif scelta.startswith("[🧪]"):
-        file_audio = os.path.join(TEST_AUDIO_DIR, scelta[4:].strip())
-    else:
-        raise InvalidChoiceError("Scelta file non valida.")
+    file_audio = _select_input_file()
 
     # 2) modello e device
     modello = ask_choice("🤖 Scegli il modello Whisper:", MODEL_OPTIONS)
@@ -160,61 +234,13 @@ def main() -> None:
 
     # ───────────── trascrizione PARZIALE ─────────────────────
     else:
-        # timestamp inizio/fine con validazione
-        while True:
-            inizio = valida_timestamp(input("Da (mm:ss o hh:mm:ss): ").strip())
-            if inizio:
-                break
-            print("❌ Formato non valido. Riprova.")
-        while True:
-            fine = valida_timestamp(input("A (mm:ss o hh:mm:ss): ").strip())
-            if fine:
-                break
-            print("❌ Formato non valido. Riprova.")
-
-        durata_tot = get_audio_duration(file_audio) or "99:59:59"
-        if timestamp_in_secondi(inizio) >= timestamp_in_secondi(fine):
-            raise InvalidChoiceError("Il timestamp di inizio deve precedere quello di fine.")
-        if timestamp_in_secondi(fine) > timestamp_in_secondi(durata_tot):
-            raise InvalidChoiceError(f"Fine ({fine}) supera durata file ({durata_tot}).")
-
-        safe_inizio = inizio.replace(":", "")
-        safe_fine = fine.replace(":", "")
-        clip_name = f"{Path(file_audio).stem}_{safe_inizio}-{safe_fine}_clip.wav"
-        clip_path = str(Path(TRANSCRIPTION_DIR) / clip_name)
-
-        # eventuale sovrascrittura clip
-        if not _should_overwrite(clip_path):
-            print("Operazione annullata (clip già esistente).")
-            sys.exit(0)
-
-        # estrai segmento
-        try:
-            taglia_audio(file_audio, inizio, fine, output_file=clip_path)
-        except Exception as exc:
-            raise AudioProcessingError(f"Errore taglio audio: {exc}") from exc
-
-        # trascrivi la clip
-        result = transcribe(
-            TranscribeParams(
-
-                audio_path=file_audio,
-                modello=modello,
-                device=device,
-                lang=lang,
-                modalita_acc=modalita_acc,
-                tipo="parziale",
-                intervallo=(inizio, fine),
-            )
+        result, clip_path = _transcribe_partial_scope(
+            file_audio=file_audio,
+            modello=modello,
+            device=device,
+            lang=lang,
+            modalita_acc=modalita_acc,
         )
-
-        # rimozione clip se richiesto
-        if ask_choice("🗂️  Conservi la clip tagliata?", ["Sì", "No"]) == "No":
-            try:
-                os.remove(clip_path)
-                clip_path = None
-            except OSError as exc:
-                print(f"⚠️  Impossibile eliminare clip: {exc}")
 
     # ───────────── salvataggio testo ─────────────────────────
     txt_path = Path(TRANSCRIPTION_DIR) / Path(result["txt_filename"]).name
@@ -253,17 +279,26 @@ def main() -> None:
     )
 
     log_transcription(
-        hostname     = HOSTNAME,
-        file_audio   = clip_path or file_audio,
-        modello      = modello,
-        device_req   = device,
-        device_act   = result["device"],
-        modalita     = "Accurata" if modalita_acc else "Standard",
-        tipo         = scope.lower(),
-        durata_audio = result["durata_audio"],
-        proc_time    = f"{int(m)}m {s:.2f}s",
-        parola_count = result["parola_count"],
-        lingua       = lang,  # nuovo parametro lingua
+        hostname=HOSTNAME,
+        params=LogTranscriptionParams(
+            file_audio=clip_path or file_audio,
+            modello=modello,
+            modalita="Accurata" if modalita_acc else "Standard",
+            tipo="completa" if scope == "Tutto" else "parziale",
+            device=DeviceInfo(
+                requested=device,
+                actual=str(result["device"]),
+            ),
+            metrics=TranscriptionMetrics(
+                durata_audio=result["durata_audio"],
+                duration_proc=f"{int(m)}m{s:.2f}s",
+                parola_count=result["parola_count"],
+            ),
+            output=OutputInfo(
+                txt_filename=result["txt_filename"],
+                lang=lang,
+            ),
+        ),
     )
 
     sys.exit(0)
