@@ -27,6 +27,17 @@ class TranscribeParams:
     tipo: str = "completa"
     intervallo: tuple[str, str] | None = None
 
+@dataclass(frozen=True)
+class OutputTxtNameParams:
+    """Parametri per generare il nome del file .txt (senza path)."""
+
+    audio_path: str
+    modello: str
+    modalita_acc: bool
+    tipo: str
+    lang: str
+    inizio: str | None = None
+    fine: str | None = None
 
 def _build_whisper_params(lang: str, modalita_acc: bool) -> dict:
     """Costruisce i parametri per Whisper in base a lingua e modalità."""
@@ -41,30 +52,21 @@ def _build_whisper_params(lang: str, modalita_acc: bool) -> dict:
         )
     return params
 
-
-def _build_output_txt_filename(
-    audio_path: str,
-    modello: str,
-    modalita_acc: bool,
-    tipo: str,
-    inizio: str | None,
-    fine: str | None,
-    lang: str,
-) -> str:
+def _build_output_txt_filename(params: OutputTxtNameParams) -> str:
     """Genera il nome del file .txt di output (senza path)."""
-    base = os.path.basename(audio_path)
+    base = os.path.basename(params.audio_path)
     base_name = os.path.splitext(base)[0]
-    modalita = "accurata" if modalita_acc else "standard"
+    modalita = "accurata" if params.modalita_acc else "standard"
 
     nome_base = genera_nome_file_output(
         NamingParams(
             base_name=base_name,
-            modello=modello,
+            modello=params.modello,
             modalita=modalita,
-            tipo=tipo,
-            inizio=inizio,
-            fine=fine,
-            lang=lang,
+            tipo=params.tipo,
+            inizio=params.inizio,
+            fine=params.fine,
+            lang=params.lang,
         )
     )
     return f"{nome_base}.txt"
@@ -89,6 +91,18 @@ def transcribe(req: TranscribeParams) -> dict:
 
     inizio, fine = (req.intervallo if req.intervallo is not None else (None, None))
 
+    txt_filename = _build_output_txt_filename(
+        OutputTxtNameParams(
+            audio_path=req.audio_path,
+            modello=req.modello,
+            modalita_acc=req.modalita_acc,
+            tipo=req.tipo,
+            lang=req.lang,
+            inizio=inizio,
+            fine=fine,
+        )
+    )
+
     # Caricamento modello e determinazione device attivo
     model = whisper.load_model(req.modello, device=req.device)
     actual_device = next(model.parameters()).device
@@ -103,16 +117,6 @@ def transcribe(req: TranscribeParams) -> dict:
 
     durata_audio = get_audio_duration(req.audio_path)
     parole = len(result["text"].split())
-
-    txt_filename = _build_output_txt_filename(
-        audio_path=req.audio_path,
-        modello=req.modello,
-        modalita_acc=req.modalita_acc,
-        tipo=req.tipo,
-        inizio=inizio,
-        fine=fine,
-        lang=req.lang,
-    )
 
     return {
         "text": result["text"],
