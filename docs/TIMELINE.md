@@ -375,6 +375,32 @@ echo $?
 # -> rating osservato 9.63/10 (exit code osservato: 8)
 ```
 
+###### ✅ A4.2.6.h — Refactor naming: introdurre `NamingParams` e allineare call-site/test (road to 10/10)
+
+**Scopo:** risolvere realmente `too-many-arguments` / `too-many-positional-arguments` su `naming.py` senza nascondere warning,
+rendendo la firma più manutenibile e riducendo complessità dei call-site.
+
+**Decisione:** introdotta dataclass immutabile `NamingParams` per aggregare parametri di naming e rendere `genera_nome_file_output`
+a singolo argomento; aggiornati i call-site e i test per usare la nuova firma.
+
+**Commit di chiusura:**
+- `797399c` — `refactor(naming): introduce NamingParams and update call sites`
+
+**Impatto:**
+- `src/package/naming.py` passa a **10.00/10** (eliminati i warning `too-many-arguments/positional` sul modulo).
+- `core.py` e `test_naming.py` riallineati alla nuova API (contratto invariato sugli output attesi).
+
+**Evidenze:**
+```bash
+python -m pytest
+# -> 49 passed
+
+python -m pylint src/package
+echo $?
+# -> rating osservato 9.71/10 (exit code osservato: 8)
+# -> warning residui: solo strutturali in core/logger/transcriber (too-many-*)
+```
+
 ---
 
 ### ⬜ A4.3 — Avviare “pulizia” dal programma Python (menu/command)
