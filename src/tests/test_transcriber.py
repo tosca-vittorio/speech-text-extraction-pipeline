@@ -114,9 +114,9 @@ def test_flusso_completa(monkeypatch, capsys, isolate):
     monkeypatch.setattr(lang_mod, "ask_choice", fake_choice)
     code, out, _ = run_and_capture(capsys)
 
-    audio_path, kwargs = isolate["transcribe"]
-    assert audio_path.endswith(".wav") and kwargs["modello"] == "tiny"
-    assert kwargs["lang"] == "en"                              # Verifica lingua passata
+    req, kwargs = isolate["transcribe"]
+    assert req.audio_path.endswith(".wav") and req.modello == "tiny"
+    assert req.lang == "en"                              # Verifica lingua passata
     assert isolate["log"]["parola_count"] == 42
     assert ".txt" in out and code == 0
 
@@ -143,10 +143,10 @@ def test_flusso_parziale(monkeypatch, capsys, isolate):
 
     code, out, _ = run_and_capture(capsys)
 
-    _, kwargs = isolate["transcribe"]
-    # Verifica che inizio/fine siano passati correttamente
-    assert kwargs["inizio"] == "00:00:05" and kwargs["fine"] == "00:00:10"
-    assert kwargs["lang"] == "en"                              # Verifica lingua passata
+    req, _ = isolate["transcribe"]
+    # Verifica che inizio/fine siano passati correttamente (ora via TranscribeParams)
+    assert req.intervallo == ("00:00:05", "00:00:10")
+    assert req.lang == "en"                              # Verifica lingua passata
     assert ".txt" in out and code == 0
 
 

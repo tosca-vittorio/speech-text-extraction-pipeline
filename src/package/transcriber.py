@@ -16,6 +16,8 @@ from pathlib import Path
 
 import torch
 
+from package.core import TranscribeParams, transcribe
+
 from package.config import (
     INPUT_VIDEO_DIR,
     INPUT_AUDIO_DIR,
@@ -34,7 +36,7 @@ from package.audio import (
     taglia_audio,
     get_audio_duration,
 )
-from package.core import transcribe
+
 from package.logger import log_transcription
 from package.errors import (
     TranscriberError,
@@ -146,12 +148,14 @@ def main() -> None:
     # ───────────── trascrizione COMPLETA ─────────────────────
     if scope == "Tutto":
         result = transcribe(
-            audio_path   = file_audio,
-            modello      = modello,
-            device       = device,
-            lang         = lang,
-            modalita_acc = modalita_acc,
-            tipo         = "completa",
+            TranscribeParams(
+                audio_path   = file_audio,
+                modello      = modello,
+                device       = device,
+                lang         = lang,
+                modalita_acc = modalita_acc,
+                tipo         =  "completa",
+            )
         )
 
     # ───────────── trascrizione PARZIALE ─────────────────────
@@ -192,14 +196,16 @@ def main() -> None:
 
         # trascrivi la clip
         result = transcribe(
-            audio_path   = clip_path,
-            modello      = modello,
-            device       = device,
-            lang         = lang,
-            modalita_acc = modalita_acc,
-            tipo         = "parziale",
-            inizio       = inizio,
-            fine         = fine,
+            TranscribeParams(
+
+                audio_path=file_audio,
+                modello=modello,
+                device=device,
+                lang=lang,
+                modalita_acc=modalita_acc,
+                tipo="parziale",
+                intervallo=(inizio, fine),
+            )
         )
 
         # rimozione clip se richiesto

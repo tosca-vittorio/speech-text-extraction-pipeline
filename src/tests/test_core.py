@@ -3,8 +3,7 @@ import re
 import types
 import pytest
 
-from package.core import transcribe
-
+from package.core import TranscribeParams, transcribe
 
 # ------------------------------------------------------------------ #
 # DummyModel per patchare whisper.load_model                         #
@@ -39,12 +38,14 @@ def test_transcribe_completa_keys_and_values(tmp_path):
     audio_path.write_bytes(b"RIFF.")
 
     res = transcribe(
-        audio_path=str(audio_path),
-        modello="small",
-        device="cpu",
-        lang="it",
-        modalita_acc=False,
-        tipo="completa",
+        TranscribeParams(
+            audio_path=str(audio_path),
+            modello="small",
+            device="cpu",
+            lang="it",
+            modalita_acc=False,
+            tipo="completa",
+        )
     )
 
     # chiavi e tipi attesi
@@ -67,14 +68,15 @@ def test_transcribe_parziale_pattern(tmp_path):
     audio_path.write_bytes(b"RIFF.")
 
     res = transcribe(
-        audio_path=str(audio_path),
-        modello="base",
-        device="cuda",
-        lang="it",
-        modalita_acc=True,
-        tipo="parziale",
-        inizio="00:00:03",
-        fine="00:00:08",
+        TranscribeParams(
+            audio_path=str(audio_path),
+            modello="base",
+            device="cuda",
+            lang="it",
+            modalita_acc=True,
+            tipo="parziale",
+            intervallo=("00:00:03", "00:00:08"),
+        )
     )
 
     assert res["text"] == "TRANSCRIBED-CLIP.WAV"
@@ -92,12 +94,13 @@ def test_transcribe_parziale_missing_timestamps(tmp_path):
 
     with pytest.raises(TypeError):
         transcribe(
-            audio_path=str(path),
-            modello="tiny",
-            device="cpu",
-            lang="it",
-            modalita_acc=False,
-            tipo="parziale",
+            TranscribeParams(
+                audio_path=str(path),
+                modello="base",
+                device="cpu",
+                tipo="parziale",
+                intervallo=None,
+            )
         )
 
 # ------------------------------------------------------------------ #
@@ -126,12 +129,14 @@ def test_transcribe_with_golden_text(tmp_path):
 
     try:
         res = transcribe(
-            audio_path=str(golden_txt),
-            modello="tiny",
-            device="cpu",
-            lang="it",
-            modalita_acc=False,
-            tipo="completa",
+            TranscribeParams(
+                audio_path=str(golden_txt),
+                modello="tiny",
+                device="cpu",
+                lang="it",
+                modalita_acc=False,
+                tipo="completa",
+            )
         )
         assert res["text"] == golden_content
     finally:
