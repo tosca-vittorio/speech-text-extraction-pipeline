@@ -1,6 +1,7 @@
+"""Pytest configuration helpers for cwd-agnostic test execution."""
+
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 def pytest_configure(config):
