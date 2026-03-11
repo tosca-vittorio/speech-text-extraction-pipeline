@@ -5,6 +5,11 @@
 
 #### A4.3 — Pylint quality gate sui test (progressivo)
 
+- **`c2e21cd` — chore(tests): clean test_config pylint cheap wins**
+  - **Type:** CHANGED · **Categoria:** Test / Lint
+  - **Cosa cambia:** pulizia mirata di `src/tests/test_config.py` con aggiunta di module docstring, rimozione di import inutilizzati e spezzatura di assert troppo lunghe.
+  - **Impatto:** eliminati i cheap wins locali del file senza alterare la suite; `python -m pytest -q` resta verde (**49 passed**) e `python -m pylint src/tests/test_config.py` raggiunge **10.00/10** con exit code **0**.
+
 - **`0b5b4b4` — chore(tests): clean src/tests conftest pylint warnings**
   - **Type:** CHANGED · **Categoria:** Test / Lint
   - **Cosa cambia:** pulizia mirata di `src/tests/conftest.py` con aggiunta di module docstring, rimozione di un import inutilizzato e ripristino della newline finale.

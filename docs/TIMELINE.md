@@ -580,6 +580,32 @@ echo $?
 # -> 30
 ```
 
+##### ✅ A4.3.2.b — Cheap win su `src/tests/test_config.py`
+**Commit di riferimento:**
+- `c2e21cd` — `chore(tests): clean test_config pylint cheap wins`
+
+**Cosa cambia:**
+- sostituito il commento iniziale con un module docstring;
+- rimosso `pytest` importato ma non utilizzato;
+- spezzate le righe troppo lunghe nelle assert;
+- normalizzato il finale file eliminando newline eccedenti.
+
+**Impatto:**
+- chiusi i cheap wins locali del file `src/tests/test_config.py`;
+- nessuna regressione funzionale sulla test suite;
+- il file `src/tests/test_config.py` raggiunge **10.00/10** al run Pylint mirato.
+
+**Evidenze:**
+```bash
+python -m pytest -q
+# -> 49 passed
+
+python -m pylint src/tests/test_config.py
+echo $?
+# -> 10.00/10
+# -> 0
+```
+
 **DoD (A4.3):**
 
 * baseline `src/tests` registrata;
