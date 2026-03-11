@@ -1,10 +1,15 @@
 ## Branch: [development]
 
 ### [Unreleased]
-> Scope corrente: **A4.2** — Pylint burn-down incrementale con commit atomici, test sempre verdi, evidenze tracciate in `docs/TIMELINE.md`.
+> Scope corrente: **post-A4.2** — chiusura hard gate Pylint su `src/package`, riallineamento documentale owner, baseline A4.3 raccolta su `src/tests` e apertura pianificazione A4.4 / A5.
 
 #### A4.2 — Pylint burn-down (cheap wins + hardening)
 > Ordinamento: **git log (più recente → più vecchio)** · principio **truth-first**: qui è riportato solo ciò che è committato.
+
+- **`5619e52` — refactor(logger,transcriber): close pylint gate with param objects and flow extraction**
+  - **Type:** CHANGED · **Categoria:** Refactor
+  - **Cosa cambia:** introdotti oggetti parametrici nel logger (`DeviceInfo`, `TranscriptionMetrics`, `OutputInfo`, `LogTranscriptionParams`), estratte le helper `_select_input_file()` e `_transcribe_partial_scope()` nel transcriber, riallineato il logging finale e aggiornati i test.
+  - **Impatto:** chiusi i warning residui di `logger.py` e `transcriber.py`; `python -m pylint src/package` raggiunge **10.00/10** con exit code **0**. Contestualmente `pyproject.toml` diventa fonte unica per la configurazione Pylint del repository.
 
 - **`faba031` — refactor(core): group output filename params to reduce arguments**
   - **Type:** CHANGED · **Categoria:** Refactor
@@ -138,10 +143,9 @@
 
 ##### Quality gates (snapshot corrente)
 - Test suite: `python -m pytest` → **49 passed**
-- Pylint (hard-run): `python -m pylint src/package` → **9.83/10**, **exit code 8**
-- Warning residui (solo strutturali):
-  - `too-many-arguments`, `too-many-positional-arguments` (logger)
-  - `too-many-locals`, `too-many-branches`, `too-many-statements` (transcriber)
+- Pylint (hard-run): `python -m pylint src/package` → **10.00/10**, **exit code 0**
+- Warning residui sul target `src/package`: **nessuno**
+- Stato del blocco: **A4.2 chiuso**
 
 #### Historical context (pre-A4.2 / hardening, packaging, repo hygiene) [ordine cronologico]
 

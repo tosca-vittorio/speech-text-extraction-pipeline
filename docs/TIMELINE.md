@@ -135,7 +135,7 @@ python -m pytest
 **Note (truth-first):**
 - `python -m package.transcriber --help` da root può ancora fallire senza installazione (layout `src/`): il comando canonico “installabile” è `transcriber`.
 
-## 🟡 A4 — Documentation alignment + Pylint + menu “clean” in Python (P0)
+## 🟡 A4 — Documentation alignment + lint hardening + cleanup preparation (P0)
 
 ### ✅ A4.1 — README + ARCHITECTURE: allineamento comandi e flusso (truth-first)
 
@@ -159,11 +159,11 @@ DRY_RUN=true VERBOSE=true tools/clean_project.sh | head -n 120
 ```
 
 
-### 🟡 A4.2 — Pylint quality gate (baseline + burn-down verso 10/10)
+### ✅ A4.2 — Pylint quality gate (package + burn-down verso 10/10)
 
 **Obiettivo:** introdurre static analysis **riproducibile** e **auditabile** come quality gate aggiuntivo (prima “soft”, poi “hard” quando il codice è allineato).
 
-**Decisione (truth-first):** allo stato attuale il run “hard” fallisce (exit code non-zero), quindi adottiamo **gate soft** (`--exit-zero`) per non bloccare lo sviluppo, mentre facciamo burn-down incrementale verso **10/10**.
+**Decisione iniziale (truth-first):** al momento dell’apertura del blocco il run “hard” falliva (exit code non-zero), quindi è stato adottato temporaneamente il **gate soft** (`--exit-zero`) per non bloccare lo sviluppo, mentre veniva eseguito il burn-down incrementale verso **10/10**.
 
 #### Macro-area: Lint Hardening (subtask)
 
@@ -211,21 +211,40 @@ python -m pylint --exit-zero src/package
 python -m pylint src/package
 ```
 
-**Evidenza (snapshot corrente):**
+**Evidenza:**
 
 * `python -m pytest` → **49 passed**
-* `python -m pylint src/package` → **9.63/10**, exit code **8** (warning residui strutturali)
+* `python -m pylint src/package` → **9.63/10**, exit code **8** 
 
 ---
 
-##### ⬜ A4.2.5 — Definire config unica (UNA sola fonte)
+##### ✅ A4.2.5 — Definire config unica (UNA sola fonte)
 
-**Scelte (da chiudere):**
+**Decisione:** adottato `pyproject.toml` come **fonte unica** per la configurazione Pylint di repository. Nessun `.pylintrc` aggiuntivo e nessun disable globale: la policy resta coerente con il burn-down tramite refactor reali.
 
-* `.pylintrc` **oppure** `pyproject.toml` (no duplicazioni)
-* target iniziale: `src/package` (scope ridotto, burn-down controllabile)
+**Implementazione:**
+- aggiunta sezione `[tool.pylint.main]` con `py-version = "3.10"`;
+- aggiunta sezione `[tool.pylint.reports]` con output testuale e score attivo;
+- aggiunta sezione `[tool.pylint.messages_control]` con `disable = []`;
+- evitata qualsiasi duplicazione di configurazione tra file multipli.
 
-##### ⬜ A4.2.6 — Burn-down chirurgico verso 10/10 (incrementale)
+**Commit di chiusura:**
+- `5619e52` — `refactor(logger,transcriber): close pylint gate with param objects and flow extraction`
+
+**Impatto:**
+- configurazione lint esplicita, versionata e centralizzata;
+- allineamento con policy “no global disables”;
+- base pronta per estendere il gate oltre `src/package` nei blocchi successivi.
+
+**Evidenze:**
+```bash
+python -m pylint src/package
+echo $?
+# -> 10.00/10
+# -> 0
+```
+
+##### ✅ A4.2.6 — Burn-down chirurgico verso 10/10 (incrementale, chiuso)
 
 ###### ✅ A4.2.6.a — Add module docstrings (batch su moduli base)
 **Scopo:** eliminare `missing-module-docstring` in modo massivo ma conservativo.
@@ -433,23 +452,205 @@ echo $?
 # -> residui strutturali solo in logger/transcriber (too-many-*)
 ```
 
----
+###### ✅ A4.2.6.j — Refactor logger/transcriber: chiudere i warning residui e portare il gate hard a 10/10
 
-### ⬜ A4.3 — Avviare “pulizia” dal programma Python (menu/command)
+**Scopo:** chiudere i warning strutturali residui in `logger.py` e `transcriber.py` senza disable globali, migliorando davvero coesione, contratti e leggibilità.
 
-**Obiettivo:** poter eseguire “pulisci (SAFE)” dalla CLI Python.
+**Decisione:**
+- introdotte in `logger.py` le dataclass `DeviceInfo`, `TranscriptionMetrics`, `OutputInfo`, `LogTranscriptionParams`;
+- mantenuto un compat layer `from_legacy()` per supportare la migrazione dei call-site legacy senza rompere il contract esistente;
+- estratte in `transcriber.py` le helper `_select_input_file()` e `_transcribe_partial_scope()` per ridurre complessità e responsabilità del `main()`;
+- riallineato il logging finale al nuovo contratto aggregato;
+- aggiornati i test di `src/tests/test_transcriber.py` al nuovo shape dei parametri di log.
 
-**Nota implementativa:**
+**Commit di chiusura:**
+- `5619e52` — `refactor(logger,transcriber): close pylint gate with param objects and flow extraction`
 
-* Default: pulizia SAFE (allowlist).
-* Azioni rischiose restano opt-in (output/logs/venv) + conferma esplicita.
+**Impatto:**
+- `src/package/logger.py` e `src/package/transcriber.py` chiudono i warning residui sul target `src/package`;
+- il gate hard di `src/package` raggiunge **10.00/10** con exit code **0**;
+- il refactor migliora davvero struttura e preparazione del progetto alla fase pre-Docker.
 
-**DoD / Evidenze:**
+**Evidenze:**
+```bash
+python -m pytest -q
+# -> 49 passed
+
+python -m pylint src/package/transcriber.py
+# -> 10.00/10
+
+python -m pylint src/package
+echo $?
+# -> 10.00/10
+# -> 0
+```
+
+##### ✅ Chiusura finale A4.2 — Gate hard chiuso su `src/package`
+
+**DoD raggiunta:**
+
+* comando canonico soft definito e documentato;
+* configurazione unica definita in `pyproject.toml`;
+* target iniziale `src/package` a **10.00/10** con hard run passante;
+* nessun disable globale usato per “nascondere” warning strutturali.
+
+**Snapshot finale A4.2:**
 
 ```bash
-transcriber
-# -> menu include "Pulisci (safe)"
+python -m pytest
+# -> 49 passed
+
+python -m pylint src/package
+echo $?
+# -> 10.00/10
+# -> 0
 ```
+
+---
+
+### 🟡 A4.3 — Pylint quality gate sui test (baseline raccolta, road to 10/10)
+
+**Obiettivo:** estendere il quality gate lint da `src/package` a `src/tests`, mantenendo separazione chiara tra codice applicativo e suite di test.
+
+**Principi:**
+- nessun disable globale per forzare il verde;
+- priorità a refactor reali, naming chiaro e test leggibili;
+- tracking separato rispetto al gate chiuso su `src/package`;
+- eventuali falsi positivi vanno trattati solo con fix mirati o disable locali e giustificati, mai con soppressioni globali.
+
+**Baseline raccolta (host):**
+```bash
+python -m pylint src/tests
+# -> 6.82/10
+# -> hard fail
+```
+
+**Cluster principali emersi dalla baseline:**
+
+* docstring mancanti su moduli, funzioni e classi di test;
+* import hygiene (`wrong-import-order`, `import-outside-toplevel`, import inutilizzati);
+* warning legati a lambda/helper temporanei nei test;
+* warning su fixture/test doubles (`unused-argument`, `redefined-outer-name`, `too-few-public-methods`);
+* alcuni casi da distinguere tra vero debito e falso positivo tool-driven (es. `wave`, resource handling, test stub).
+
+**Comandi di riferimento:**
+
+```bash
+python -m pylint src/tests
+python -m pylint --exit-zero src/tests
+```
+
+**Piano operativo suggerito per A4.3:**
+
+* **A4.3.1** formalizzare baseline e criteri di triage;
+* **A4.3.2** cheap wins: docstring, newline, import order, import inutilizzati;
+* **A4.3.3** cleanup dei test helper: lambda, naming, fixture signatures;
+* **A4.3.4** gestione warning speciali / falsi positivi con approccio minimamente invasivo;
+* **A4.3.5** chiusura gate hard su `src/tests`.
+
+**DoD (A4.3):**
+
+* baseline `src/tests` registrata;
+* burn-down incrementale tracciato con evidenze;
+* target `src/tests` portato a **10.00/10** oppure policy finale esplicita e motivata;
+* evidenze riallineate in `docs/TIMELINE.md` e `docs/CHANGELOG.md`.
+
+##### ⬜ A4.3.6 — Coverage test suite e quality gate complementare
+
+**Obiettivo:** affiancare al lint dei test una misura di copertura concreta e riproducibile, utile a valutare quanto la suite eserciti davvero il codice applicativo.
+
+**Decisione attesa:**
+- valutare l’adozione di un comando canonico di coverage (es. tramite `pytest-cov`);
+- misurare la copertura del package applicativo, non della sola suite test;
+- definire una policy iniziale realistica (baseline + soglia minima incrementale), evitando target arbitrari non sostenibili.
+
+**Focus:**
+- coverage percentuale complessiva;
+- report delle linee mancanti (`term-missing` o equivalente);
+- possibile integrazione del comando nel workflow locale pre-Docker e successivamente in CI.
+
+**Comandi candidati (da validare):**
+```bash
+python -m pytest --cov=src/package --cov-report=term-missing
+python -m pytest --cov=src/package --cov-report=xml
+```
+
+**DoD (A4.3.6):**
+
+* comando canonico definito;
+* baseline coverage raccolta;
+* eventuale dipendenza/tooling aggiuntivo documentato;
+* evidenze registrate in `docs/TIMELINE.md`.
+
+---
+
+### ⬜ A4.4 — Pulizia progetto e riallineamento workflow clean
+
+**Obiettivo:** consolidare la pulizia del progetto prima della dockerizzazione, verificando se il workflow debba restare solo Bash o essere esposto anche dalla CLI Python.
+
+**Focus:**
+
+* audit dello stato corrente di `tools/clean_project.sh`;
+* eventuale aggiornamento SAFE-by-default dello script;
+* valutazione dell’esposizione della pulizia dalla CLI Python senza duplicare logica;
+* gestione esplicita della cache interna / artefatti temporanei del progetto;
+* riallineamento del menu principale della CLI in modo che supporti chiaramente:
+  - `Trascrivi`
+  - `Pulisci (safe)`
+  - `Esci`
+* allineamento tra repo hygiene, documentazione e comportamento reale.
+
+**Vincoli:**
+
+* nessuna azione distruttiva di default;
+* opt-in espliciti per aree rischiose;
+* una sola fonte di verità per la policy di clean;
+* se la pulizia viene esposta dalla CLI Python, la logica deve restare centralizzata (wrapper/integrazione, non duplicazione fragile).
+
+**DoD (A4.4):**
+
+* script Bash rivalutato/aggiornato se necessario;
+* decisione esplicita su CLI Python vs solo Bash;
+* eventuale modulo/voce CLI per cancellare cache interna e artefatti safe;
+* menu principale riallineato a `Trascrivi / Pulisci (safe) / Esci` se approvato;
+* documentazione riallineata;
+* qualità repo invariata (`pytest` e lint verdi sui target già chiusi).
+
+---
+
+### ⬜ A5 — Ottimizzazioni, refactor e preparazione pre-Docker
+
+**Obiettivo:** eseguire una fase mirata di miglioramento tecnico prima della dockerizzazione, per ridurre attrito, side-effect e debito strutturale.
+
+**Aree candidate:**
+
+* refactor incrementali con impatto reale su coesione e manutenibilità;
+* semplificazione di flussi I/O, overwrite, output e logging;
+* eventuale estrazione di helper/servizi dove utile;
+* cleanup di create/update/delete residui nella repo;
+* ulteriore hardening orientato a riproducibilità host/container;
+* introduzione di un meccanismo di valutazione dell’accuracy delle trascrizioni;
+* arricchimento del logging con score/evidenze di qualità quando disponibili;
+* progettazione di accuracy test / benchmark dataset per confrontare output atteso vs output generato;
+* valutazione dell’estensione della CLI per consentire anche selezione di file locali esterni alla struttura standard del progetto, se ritenuto coerente con il modello operativo;
+* spike esplorativo su eventuali tool/framework utili a migliorare sviluppo, qualità o produttività (solo se con vantaggio concreto e misurabile).
+
+**Criterio guida:** questa fase non serve a “fare verde”, ma a rendere il progetto più solido, osservabile e più pronto per la fase **B — Docker**.
+
+**Subtask candidati:**
+- **A5.1** Accuracy evaluation & scoring delle trascrizioni;
+- **A5.2** Accuracy test / benchmark harness e dataset di riferimento;
+- **A5.3** Estensione input CLI per file locali esterni alla repo;
+- **A5.4** Ottimizzazioni e refactor pre-Docker;
+- **A5.5** Spike valutativo su tool esterni / framework di supporto.
+
+**DoD (A5):**
+
+* miglioramenti committati, testati e documentati;
+* nessuna regressione sui contratti correnti;
+* eventuale metrica di accuracy definita e tracciabile;
+* eventuali benchmark/accuracy test impostati con evidenze ripetibili;
+* stato del progetto più adatto alla dockerizzazione rispetto alla baseline post-A4.2.
 
 ---
 
@@ -646,3 +847,39 @@ Questa fase va eseguita:
 - Nessuna incoerenza tra doc e codice.
 - Nessuna istruzione nel README che fallisce.
 - Nessun riferimento a path o flussi non più esistenti.
+
+---
+
+# H — Evoluzioni di fruizione e distribuzione (post-core)
+
+## ⬜ H1 — Interfaccia Web / GUI (es. Streamlit)
+
+**Obiettivo:** valutare una superficie d’uso più accessibile rispetto alla CLI, senza rompere i contratti del core applicativo.
+
+**Focus:**
+- eventuale GUI web leggera per selezione input, parametri, esecuzione e lettura output;
+- riuso del core esistente senza duplicare logica applicativa;
+- separazione chiara tra interfaccia e service/core.
+
+**DoD (H1):**
+- decisione architetturale esplicita;
+- prototipo o spike documentato se approvato;
+- nessuna regressione sul flusso CLI canonico.
+
+---
+
+## ⬜ H2 — Packaging desktop / distribuibile eseguibile (es. `.exe`)
+
+**Obiettivo:** valutare una distribuzione più semplice per uso locale su macchine non orientate a workflow Python/CLI.
+
+**Focus:**
+- fattibilità packaging desktop;
+- impatto su dipendenze, ffmpeg, modelli, path e logging;
+- coerenza con il percorso Docker / batch / CI già pianificato.
+
+**DoD (H2):**
+- studio di fattibilità documentato;
+- eventuale scelta toolchain;
+- decisione esplicita su priorità e sostenibilità.
+
+---
