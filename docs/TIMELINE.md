@@ -548,6 +548,38 @@ python -m pylint --exit-zero src/tests
 * **A4.3.4** gestione warning speciali / falsi positivi con approccio minimamente invasivo;
 * **A4.3.5** chiusura gate hard su `src/tests`.
 
+**Avanzamento registrato (truth-first):**
+
+##### ✅ A4.3.2.a — Cheap win su `src/tests/conftest.py`
+**Commit di riferimento:**
+- `0b5b4b4` — `chore(tests): clean src/tests conftest pylint warnings`
+
+**Cosa cambia:**
+- aggiunto module docstring a `src/tests/conftest.py`;
+- rimosso `import os` inutilizzato;
+- ripristinata newline finale del file.
+
+**Impatto:**
+- chiusi i warning locali del file `src/tests/conftest.py`;
+- nessuna regressione funzionale sulla test suite;
+- baseline `src/tests` migliorata da **6.82/10** a **6.89/10**.
+
+**Evidenze:**
+```bash
+python -m pytest
+# -> 49 passed
+
+python -m pylint src/package
+echo $?
+# -> 10.00/10
+# -> 0
+
+python -m pylint src/tests
+echo $?
+# -> 6.89/10
+# -> 30
+```
+
 **DoD (A4.3):**
 
 * baseline `src/tests` registrata;

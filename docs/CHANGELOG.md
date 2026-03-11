@@ -3,6 +3,13 @@
 ### [Unreleased]
 > Scope corrente: **post-A4.2** — chiusura hard gate Pylint su `src/package`, riallineamento documentale owner, baseline A4.3 raccolta su `src/tests` e apertura pianificazione A4.4 / A5.
 
+#### A4.3 — Pylint quality gate sui test (progressivo)
+
+- **`0b5b4b4` — chore(tests): clean src/tests conftest pylint warnings**
+  - **Type:** CHANGED · **Categoria:** Test / Lint
+  - **Cosa cambia:** pulizia mirata di `src/tests/conftest.py` con aggiunta di module docstring, rimozione di un import inutilizzato e ripristino della newline finale.
+  - **Impatto:** eliminati i warning locali del file senza alterare il comportamento della suite; `python -m pytest` resta verde (**49 passed**) e il rating di `python -m pylint src/tests` migliora da **6.82/10** a **6.89/10**.
+
 #### A4.2 — Pylint burn-down (cheap wins + hardening)
 > Ordinamento: **git log (più recente → più vecchio)** · principio **truth-first**: qui è riportato solo ciò che è committato.
 
